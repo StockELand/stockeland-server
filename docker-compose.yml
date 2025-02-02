@@ -1,0 +1,22 @@
+version: '3'
+services:
+  mariadb:
+    image: mariadb:latest # 공식 MariaDB 이미지를 사용
+    restart: always
+    container_name: stockeland-db
+    environment:
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_CHARSET=utf8mb4 # UTF-8 인코딩 설정
+    ports:
+      - '3307:3306'
+    volumes:
+      - ./data/mysql-data:/var/lib/mysql # 데이터가 저장될 로컬 경로
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf # MariaDB 설정 파일을 추가하여 인코딩 설정
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - '6379:6379'
