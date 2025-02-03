@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { SseModule } from './sse/sse.module';
-import { ParserModule } from './parser/parser.module';
 import { StockModule } from './stock/stock.module';
 import { ConfigModule } from '@nestjs/config';
 import { DbModule } from './db/db.module';
 import { BullModule } from '@nestjs/bull';
+import { ParseController } from './parse/parse.controller';
+import { ParseModule } from './parse/parse.module';
 
 @Module({
   imports: [
@@ -16,10 +16,9 @@ import { BullModule } from '@nestjs/bull';
       redis: { host: 'localhost', port: 6379 },
     }),
     StockModule,
-    SseModule,
-    ParserModule,
+    ParseModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, ParseController],
   providers: [AppService],
 })
 export class AppModule {}

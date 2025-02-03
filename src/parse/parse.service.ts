@@ -1,13 +1,69 @@
 import { Injectable } from '@nestjs/common';
-import { spawn } from 'child_process';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import * as path from 'path';
 import * as os from 'os';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { spawn } from 'child_process';
+import { Subject } from 'rxjs';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { StockService } from 'src/stock/stock.service';
+
+interface ProgressUpdatePayload {
+  progress: number;
+  state: string;
+}
 
 @Injectable()
-export class ParserService {
-  constructor(private readonly eventEmitter: EventEmitter2) {}
-  async fetchStockDataWithProgress(symbols: string[]): Promise<{
+export class ParseService {
+  private progressSubject = new Subject<ProgressUpdatePayload>();
+
+  constructor(
+    @InjectQueue('stock-queue') private stockQueue: Queue,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly stockService: StockService,
+  ) {}
+
+  getProgressStream() {
+    return this.progressSubject.asObservable();
+  }
+
+  @OnEvent('progress.update')
+  handleProgressUpdate(payload: ProgressUpdatePayload) {
+    this.progressSubject.next(payload);
+  }
+
+  async removeJob(jobId: string): Promise<{ message: string }> {
+    const job = await this.stockQueue.getJob(jobId);
+    if (!job) {
+      return { message: `Job with ID ${jobId} not found.` };
+    }
+
+    await job.remove();
+    return { message: `Job with ID ${jobId} has been removed.` };
+  }
+
+  async startStockParsing(): Promise<void> {
+    const existingJobs = await this.stockQueue.getJobs([
+      'waiting',
+      'active',
+      'delayed',
+    ]);
+
+    // console.log(existingJobs);
+
+    if (existingJobs.length > 0) {
+      console.log(
+        `A job is already in progress. Job ID: ${existingJobs[0].id}`,
+      );
+      return;
+    }
+
+    const symbols = this.stockService.getStockSymbols();
+    await this.stockQueue.add('parse-stock-data', { symbols });
+    console.log('New job added to queue.');
+  }
+
+  async parseStockData(symbols: string[]): Promise<{
     finalData: any[];
   }> {
     return new Promise((resolve, reject) => {
@@ -18,12 +74,11 @@ export class ParserService {
           : venvPython;
       const pythonProcess = spawn(
         pythonExecutable,
-        ['src/parser/parser.py', JSON.stringify(symbols)],
+        ['src/parse/parse.py', JSON.stringify(symbols)],
         {
           env: { ...process.env },
         },
       );
-
       let lastProgress = -1;
       const finalData: any[] = [];
 

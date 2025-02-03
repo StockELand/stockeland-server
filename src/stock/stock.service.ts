@@ -1,9 +1,5 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Queue } from 'bull';
-import { Subject } from 'rxjs';
 import { StockData } from 'src/entities/stock.entity';
 import { Repository } from 'typeorm';
 
@@ -185,28 +181,15 @@ const symbols = [
   'IDXX',
 ];
 
-interface ProgressUpdatePayload {
-  progress: number;
-  state: string;
-}
-
 @Injectable()
 export class StockService {
-  private progressSubject = new Subject<ProgressUpdatePayload>();
-
   constructor(
     @InjectRepository(StockData)
     private stockRepository: Repository<StockData>,
-    @InjectQueue('stock-queue') private stockQueue: Queue,
   ) {}
 
-  getProgressStream() {
-    return this.progressSubject.asObservable();
-  }
-
-  @OnEvent('progress.update')
-  handleProgressUpdate(payload: ProgressUpdatePayload) {
-    this.progressSubject.next(payload);
+  getStockSymbols() {
+    return symbols;
   }
 
   async saveToDatabase(data: any[]): Promise<void> {
@@ -229,7 +212,6 @@ export class StockService {
       failedRows.push(...data);
     }
 
-    // ✅ 실패한 데이터 로그만 출력 (재시도 없음)
     if (failedRows.length > 0) {
       console.error(
         `⚠️ The following ${failedRows.length} records already exist and were skipped:`,
@@ -238,34 +220,5 @@ export class StockService {
         failedRows.map((row) => ({ symbol: row.symbol, date: row.date })),
       );
     }
-  }
-  async startStockParsing(): Promise<void> {
-    const existingJobs = await this.stockQueue.getJobs([
-      'waiting', // 대기 중인 작업
-      'active', // 실행 중인 작업
-      'delayed', // 예약된 작업
-    ]);
-
-    console.log(existingJobs);
-
-    if (existingJobs.length > 0) {
-      console.log(
-        `A job is already in progress. Job ID: ${existingJobs[0].id}`,
-      );
-      return;
-    }
-
-    await this.stockQueue.add('parse-stock-data', { symbols });
-    console.log('New job added to queue.');
-  }
-
-  async removeJob(jobId: string): Promise<{ message: string }> {
-    const job = await this.stockQueue.getJob(jobId);
-    if (!job) {
-      return { message: `Job with ID ${jobId} not found.` };
-    }
-
-    await job.remove(); // ✅ 작업을 강제 종료 및 삭제
-    return { message: `Job with ID ${jobId} has been removed.` };
   }
 }

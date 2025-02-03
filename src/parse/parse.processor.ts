@@ -1,15 +1,15 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { ParserService } from 'src/parser/parser.service';
-import { StockService } from './stock.service';
+import { StockService } from 'src/stock/stock.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Job } from 'bull';
+import { ParseService } from './parse.service';
 
 @Processor('stock-queue')
 @Injectable()
-export class StockProcessor {
+export class ParseProcessor {
   constructor(
-    private readonly parserService: ParserService,
+    private readonly parseService: ParseService,
     private readonly stockService: StockService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -24,9 +24,7 @@ export class StockProcessor {
     });
 
     try {
-      const { finalData } = await this.parserService.fetchStockDataWithProgress(
-        symbols,
-      );
+      const { finalData } = await this.parseService.parseStockData(symbols);
 
       this.eventEmitter.emit('progress.update', {
         progress: 90,
@@ -40,7 +38,6 @@ export class StockProcessor {
         state: 'completed',
       });
     } catch (error) {
-      console.error(`❌ Stock Parsing 중 에러 발생: ${error}`);
       this.eventEmitter.emit('progress.update', {
         progress: 100,
         state: 'failed',
