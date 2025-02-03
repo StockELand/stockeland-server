@@ -1,28 +1,10 @@
 import json
 import yfinance as yf
 import pandas as pd
+import sys
 from datetime import datetime, timedelta
 
-symbols = [
-    'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'GOOG', 'BRK-B', 'NVDA', 'TSLA', 'META', 'UNH',
-    'XOM', 'JNJ', 'JPM', 'V', 'PG', 'MA', 'HD', 'CVX', 'MRK', 'LLY', 'PEP', 'KO',
-    'ABBV', 'AVGO', 'COST', 'TMO', 'CSCO', 'MCD', 'ACN', 'NEE', 'WMT', 'DHR',
-    'DIS', 'ADBE', 'NFLX', 'INTC', 'AMD', 'TXN', 'PYPL', 'HON', 'ABT', 'CRM',
-    'QCOM', 'MDT', 'NKE', 'UPS', 'BMY', 'RTX', 'LIN', 'ORCL', 'AMGN', 'LOW',
-    'CVS', 'UNP', 'MS', 'T', 'USB', 'SCHW', 'GS', 'RTX', 'BLK', 'C', 'BK',
-    'PLD', 'SCHW', 'SPGI', 'AXP', 'CI', 'CNC', 'DE', 'DUK', 'HUM', 'ICE', 'ITW',
-    'MMM', 'TGT', 'CAT', 'FDX', 'WM', 'MO', 'PSA', 'LMT', 'EL', 'SYK', 'ADI',
-    'D', 'BDX', 'ETN', 'ZTS', 'ADP', 'ISRG', 'CL', 'GILD', 'BSX', 'PGR',
-    'AMT', 'MDLZ', 'TFC', 'CCI', 'NSC', 'WM', 'TJX', 'SHW', 'SPG', 'NOW',
-    'HCA', 'EOG', 'CMCSA', 'ATVI', 'CARR', 'EXC', 'AON', 'COP', 'VRTX', 'EQIX',
-    'ICE', 'MCO', 'REGN', 'APD', 'CHTR', 'SO', 'BAX', 'KHC', 'KMB', 'AEP',
-    'SBUX', 'GM', 'FIS', 'DFS', 'EBAY', 'HAL', 'DOW', 'KMI', 'WBA', 'SYY',
-    'STZ', 'ADM', 'AIG', 'PRU', 'FISV', 'FTNT', 'MET', 'HLT', 'TEL', 'DD',
-    'WELL', 'CTVA', 'TRV', 'PXD', 'ECL', 'APH', 'PPL', 'ROK', 'PCAR', 'AFL',
-    'GLW', 'DLR', 'HSY', 'MAR', 'CMS', 'SLB', 'PAYX', 'MSCI', 'ED', 'ODFL',
-    'HIG', 'CTAS', 'CME', 'MNST', 'MTD', 'ROST', 'CDNS', 'FAST', 'IQV', 'IDXX'
-]
-
+symbols = json.loads(sys.argv[1])
 
 def fetch_stock_data(symbols):
     end_date = datetime.now()
@@ -30,34 +12,30 @@ def fetch_stock_data(symbols):
     data = yf.download(symbols, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), group_by='ticker', progress=False)
 
     if data.empty:
-        return []
+        print(json.dumps({"debug": "Data is empty!"}), flush=True)
+        return
 
-    results = []
+    total_symbols = len(symbols)
+    for i, symbol in enumerate(symbols):
+        stock_df = data.get(symbol, None)
+        if stock_df is None:
+            print(json.dumps({"debug": f"No data for {symbol}"}), flush=True)
+            continue
 
-    for symbol in symbols:
-        try:
-            stock_df = data.xs(symbol, level="Ticker", axis=1).dropna()
-            for index, row in stock_df.iterrows():
-                try:
-                    results.append({
-                        "symbol": symbol,
-                        "date": index.strftime('%Y-%m-%d'),
-                        "open": round(row["Open"], 2),
-                        "high": round(row["High"], 2),
-                        "low": round(row["Low"], 2),
-                        "close": round(row["Close"], 2),
-                        "volume": int(row["Volume"]),
-                    })
-                except Exception as e:
-                    print(f"⚠️ Error processing row {index} for {symbol}: {e}")
-
-        except KeyError:
-            print(f"⚠️ No data found for {symbol}")
-        except Exception as e:
-            print(f"⚠️ Unexpected error for {symbol}: {e}")
-
-    return results
+        stock_df = stock_df.dropna()
+        for index, row in stock_df.iterrows():
+            result = {
+                "symbol": symbol,
+                "date": index.strftime('%Y-%m-%d'),
+                "open": round(row["Open"], 2),
+                "high": round(row["High"], 2),
+                "low": round(row["Low"], 2),
+                "close": round(row["Close"], 2),
+                "volume": int(row["Volume"]),
+            }
+            print(json.dumps({"data": result}), flush=True)
+            
+        print(json.dumps({"progress": round(i/total_symbols*100)}), flush=True)
 
 if __name__ == '__main__':
-    stock_data = fetch_stock_data(symbols)
-    print(json.dumps(stock_data, indent=4))
+    fetch_stock_data(symbols)
