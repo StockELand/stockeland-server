@@ -15,7 +15,7 @@ export class StockData {
   id: number;
 
   @Column()
-  symbol: string; // ✅ FK이지만 직접 컬럼으로 추가 (중복 업데이트 가능)
+  symbol: string;
 
   @Column({ type: 'date' })
   date: string;
