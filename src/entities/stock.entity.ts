@@ -1,13 +1,21 @@
-import { Entity, Column, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  Unique,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { StockInfoData } from './stock-info.entity';
 
 @Entity('stock_data')
-@Unique(['symbol', 'date'])
+@Unique(['stockInfo', 'date'])
 export class StockData {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  symbol: string;
+  symbol: string; // ✅ FK이지만 직접 컬럼으로 추가 (중복 업데이트 가능)
 
   @Column({ type: 'date' })
   date: string;
@@ -26,4 +34,8 @@ export class StockData {
 
   @Column({ type: 'bigint' })
   volume: number;
+
+  @ManyToOne(() => StockInfoData, (stockInfo) => stockInfo.stockData)
+  @JoinColumn({ name: 'symbol' })
+  stockInfo: StockInfoData;
 }
