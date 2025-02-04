@@ -58,7 +58,7 @@ export class ParseService {
       return;
     }
 
-    const symbols = this.stockService.getStockSymbols();
+    const symbols = await this.stockService.findAllSymbol();
     await this.stockQueue.add('parse-stock-data', { symbols });
     console.log('New job added to queue.');
   }
