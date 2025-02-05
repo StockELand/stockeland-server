@@ -7,6 +7,7 @@ import { DbModule } from './db/db.module';
 import { BullModule } from '@nestjs/bull';
 import { ParseController } from './parse/parse.controller';
 import { ParseModule } from './parse/parse.module';
+import { PredictModule } from './predict/predict.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ParseModule } from './parse/parse.module';
     }),
     StockModule,
     ParseModule,
+    PredictModule,
   ],
   controllers: [AppController, ParseController],
   providers: [AppService],
