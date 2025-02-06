@@ -21,7 +21,6 @@ export class PredictProcessor {
 
     try {
       const last100StockData = await this.stockService.findLast100StockData();
-      console.log(last100StockData);
 
       const finalData = await PythonRunner.run('src/predict/predict.py', {
         stdInData: last100StockData,
@@ -45,7 +44,6 @@ export class PredictProcessor {
         state: 'completed',
       });
     } catch (error) {
-      console.log(error);
       this.eventEmitter.emit('process.learning', {
         progress: 100,
         state: 'failed',
