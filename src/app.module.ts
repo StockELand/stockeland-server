@@ -8,6 +8,7 @@ import { BullModule } from '@nestjs/bull';
 import { ParseController } from './parse/parse.controller';
 import { ParseModule } from './parse/parse.module';
 import { PredictModule } from './predict/predict.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PredictModule } from './predict/predict.module';
     StockModule,
     ParseModule,
     PredictModule,
+    CommonModule,
   ],
   controllers: [AppController, ParseController],
   providers: [AppService],
