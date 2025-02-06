@@ -3,8 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { StockService } from 'src/stock/stock.service';
 import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
+import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 
-@Processor('stock-queue')
+@Processor(QUEUE_NAMES.PARSE_QUEUE)
 @Injectable()
 export class ParseProcessor {
   constructor(
@@ -12,9 +13,9 @@ export class ParseProcessor {
     private readonly eventService: EventService,
   ) {}
 
-  @Process('parse-stock-data')
+  @Process(JOB_NAMES.PARSE_STOCK)
   async handleParsing() {
-    this.eventService.emit('progress.update', {
+    this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
       progress: 0,
       state: 'Ready',
     });
@@ -26,7 +27,7 @@ export class ParseProcessor {
         args: [JSON.stringify(symbols)],
         onStdout: (out) => {
           if (out.progress) {
-            this.eventService.emit('progress.update', {
+            this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
               progress: 30 + Math.round((out.progress / 10) * 6),
               state: 'Parsing',
             });
@@ -37,19 +38,19 @@ export class ParseProcessor {
         },
       });
 
-      this.eventService.emit('progress.update', {
+      this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 90,
         state: 'Saving',
       });
 
       await this.stockService.saveToDatabase(finalData);
 
-      this.eventService.emit('progress.update', {
+      this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 100,
         state: 'completed',
       });
     } catch (error) {
-      this.eventService.emit('progress.update', {
+      this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 100,
         state: 'failed',
       });

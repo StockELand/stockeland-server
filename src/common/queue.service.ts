@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { QUEUE_NAMES } from './constants';
 
 @Injectable()
 export class QueueService {
   private queues: Map<string, Queue>;
   constructor(
-    @InjectQueue('stock-queue') private stockQueue: Queue,
-    @InjectQueue('predict-queue') private predictQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.PARSE_QUEUE) private parseQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.PREDICT_QUEUE) private predictQueue: Queue,
   ) {
     this.queues = new Map([
-      ['stock-queue', this.stockQueue],
-      ['predict-queue', this.predictQueue],
+      [QUEUE_NAMES.PARSE_QUEUE, this.parseQueue],
+      [QUEUE_NAMES.PREDICT_QUEUE, this.predictQueue],
     ]);
   }
 
