@@ -59,9 +59,19 @@ export class StockService {
   async savePredictions(
     predictions: { symbol: string; change_percent: number }[],
   ): Promise<void> {
-    const entities = predictions.map((prediction) =>
-      this.predictRepository.create(prediction),
-    );
-    await this.predictRepository.save(entities);
+    const today = new Date().toISOString().split('T')[0];
+
+    await this.predictRepository
+      .createQueryBuilder()
+      .insert()
+      .into(StockPrediction)
+      .values(
+        predictions.map((prediction) => ({
+          ...prediction,
+          predicted_at: today,
+        })),
+      )
+      .orUpdate(['change_percent'], ['symbol', 'predicted_at'])
+      .execute();
   }
 }
