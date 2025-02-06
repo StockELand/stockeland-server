@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { spawn } from 'child_process';
-import * as path from 'path';
-import * as os from 'os';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Subject } from 'rxjs';
@@ -16,10 +13,7 @@ interface ProgressUpdatePayload {
 export class PredictService {
   private progressSubject = new Subject<ProgressUpdatePayload>();
 
-  constructor(
-    @InjectQueue('predict-queue') private predictQueue: Queue,
-    private readonly eventEmitter: EventEmitter2,
-  ) {}
+  constructor(@InjectQueue('predict-queue') private predictQueue: Queue) {}
 
   getProgressStream() {
     return this.progressSubject.asObservable();
@@ -55,76 +49,5 @@ export class PredictService {
 
     await this.predictQueue.add('predict-model-learning');
     console.log('New job added to queue.');
-  }
-
-  async predictModelLeaning(stockData: any[]): Promise<{
-    finalData: any[];
-  }> {
-    return new Promise((resolve, reject) => {
-      const venvPython = path.join(__dirname, '../../venv/bin/python');
-      const pythonExecutable =
-        os.platform() === 'win32'
-          ? path.join(__dirname, '../../venv/Scripts/python.exe')
-          : venvPython;
-      const pythonProcess = spawn(
-        pythonExecutable,
-        ['src/predict/predict.py'],
-        {
-          env: { ...process.env },
-        },
-      );
-
-      const jsonString = JSON.stringify(stockData);
-      const bufferSize = 64 * 1024; // 64KB씩 전송
-      for (let i = 0; i < jsonString.length; i += bufferSize) {
-        pythonProcess.stdin.write(jsonString.slice(i, i + bufferSize));
-      }
-      pythonProcess.stdin.end();
-
-      let lastProgress = -1;
-      const finalData: any[] = [];
-
-      pythonProcess.stdout.on('data', (data) => {
-        const lines = data
-          .toString()
-          .split('\n')
-          .filter((line) => line.trim());
-        for (const line of lines) {
-          if (!line) continue;
-          try {
-            const parsed = JSON.parse(line);
-            if (
-              parsed.progress !== undefined &&
-              parsed.progress !== lastProgress
-            ) {
-              lastProgress = parsed.progress;
-              console.log(parsed.progress);
-              this.eventEmitter.emit('process.learning', {
-                progress: parsed.progress,
-                state: 'learning',
-              });
-            }
-            if (parsed.data) {
-              finalData.push(parsed.data);
-              console.log(parsed.data);
-            }
-          } catch (error) {
-            console.error(`Invalid JSON from Python: ${line}`);
-          }
-        }
-      });
-
-      pythonProcess.stderr.on('data', (data) => {
-        console.error(`Python Error: ${data.toString()}`);
-      });
-
-      pythonProcess.on('close', (code) => {
-        if (code === 0) {
-          resolve({ finalData });
-        } else {
-          reject(new Error(`Python process exited with code ${code}`));
-        }
-      });
-    });
   }
 }

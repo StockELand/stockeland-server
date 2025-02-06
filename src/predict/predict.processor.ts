@@ -2,13 +2,12 @@ import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { StockService } from 'src/stock/stock.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PredictService } from './predict.service';
+import { PythonRunner } from 'src/common/python-runner';
 
 @Processor('predict-queue')
 @Injectable()
 export class PredictProcessor {
   constructor(
-    private readonly predictService: PredictService,
     private readonly stockService: StockService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -21,9 +20,24 @@ export class PredictProcessor {
     });
 
     try {
-      const { finalData } = await this.predictService.predictModelLeaning(
-        await this.stockService.findLast100StockData(),
-      );
+      const last100StockData = await this.stockService.findLast100StockData();
+      console.log(last100StockData);
+
+      const finalData = await PythonRunner.run('src/predict/predict.py', {
+        stdInData: last100StockData,
+        onStdout: (out) => {
+          if (out.progress) {
+            this.eventEmitter.emit('process.learning', {
+              progress: out.progress,
+              state: 'learning',
+            });
+          }
+        },
+        onStderr: (err) => {
+          console.error(`Python Error: ${err.toString()}`);
+        },
+      });
+
       await this.stockService.savePredictions(finalData);
 
       this.eventEmitter.emit('process.learning', {
@@ -31,6 +45,7 @@ export class PredictProcessor {
         state: 'completed',
       });
     } catch (error) {
+      console.log(error);
       this.eventEmitter.emit('process.learning', {
         progress: 100,
         state: 'failed',

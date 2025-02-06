@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import * as path from 'path';
-import * as os from 'os';
-import { spawn } from 'child_process';
+import { OnEvent } from '@nestjs/event-emitter';
 import { Subject } from 'rxjs';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
@@ -19,7 +16,6 @@ export class ParseService {
 
   constructor(
     @InjectQueue('stock-queue') private stockQueue: Queue,
-    private readonly eventEmitter: EventEmitter2,
     private readonly stockService: StockService,
   ) {}
 
@@ -49,8 +45,6 @@ export class ParseService {
       'delayed',
     ]);
 
-    // console.log(existingJobs);
-
     if (existingJobs.length > 0) {
       console.log(
         `A job is already in progress. Job ID: ${existingJobs[0].id}`,
@@ -61,68 +55,5 @@ export class ParseService {
     const symbols = await this.stockService.findAllSymbol();
     await this.stockQueue.add('parse-stock-data', { symbols });
     console.log('New job added to queue.');
-  }
-
-  async parseStockData(symbols: string[]): Promise<{
-    finalData: any[];
-  }> {
-    return new Promise((resolve, reject) => {
-      const venvPython = path.join(__dirname, '../../venv/bin/python');
-      const pythonExecutable =
-        os.platform() === 'win32'
-          ? path.join(__dirname, '../../venv/Scripts/python.exe')
-          : venvPython;
-      const pythonProcess = spawn(
-        pythonExecutable,
-        ['src/parse/parse.py', JSON.stringify(symbols)],
-        {
-          env: { ...process.env },
-        },
-      );
-      let lastProgress = -1;
-      const finalData: any[] = [];
-
-      pythonProcess.stdout.on('data', (data) => {
-        const lines = data
-          .toString()
-          .split('\n')
-          .filter((line) => line.trim());
-        for (const line of lines) {
-          if (!line) continue;
-          try {
-            const parsed = JSON.parse(line);
-
-            if (
-              parsed.progress !== undefined &&
-              parsed.progress !== lastProgress
-            ) {
-              lastProgress = parsed.progress;
-              this.eventEmitter.emit('progress.update', {
-                progress: 30 + Math.round((parsed.progress / 10) * 6),
-                state: 'Parsing',
-              });
-            }
-            if (parsed.data) {
-              finalData.push(parsed.data);
-              // console.log(`✅ Received ${finalData.length} records so far`);
-            }
-          } catch (error) {
-            console.error(`Invalid JSON from Python: ${line}`);
-          }
-        }
-      });
-
-      pythonProcess.stderr.on('data', (data) => {
-        console.error(`Python Error: ${data.toString()}`);
-      });
-
-      pythonProcess.on('close', (code) => {
-        if (code === 0) {
-          resolve({ finalData });
-        } else {
-          reject(new Error(`Python process exited with code ${code}`));
-        }
-      });
-    });
   }
 }
