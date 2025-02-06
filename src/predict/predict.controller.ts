@@ -1,10 +1,14 @@
-import { Controller, Get, Param, Sse } from '@nestjs/common';
+import { Controller, Get, Sse } from '@nestjs/common';
 import { PredictService } from './predict.service';
 import { Observable } from 'rxjs';
+import { EventService } from 'src/common/event.service';
 
 @Controller('predict')
 export class PredictController {
-  constructor(private readonly predictService: PredictService) {}
+  constructor(
+    private readonly predictService: PredictService,
+    private readonly eventService: EventService,
+  ) {}
 
   @Get('update')
   async startParsing() {
@@ -12,15 +16,10 @@ export class PredictController {
     return { message: 'Stock parsing started' };
   }
 
-  @Get('remove-job/:id')
-  async removeJob(@Param('id') jobId: string) {
-    return await this.predictService.removeJob(jobId);
-  }
-
   @Sse('progress')
   progress(): Observable<MessageEvent> {
     return new Observable((observer) => {
-      this.predictService.getProgressStream().subscribe((progressData) => {
+      this.eventService.getEventStream().subscribe((progressData) => {
         observer.next({ data: progressData } as MessageEvent);
       });
     });
