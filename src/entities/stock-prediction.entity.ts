@@ -5,10 +5,12 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { StockInfoData } from './stock-info.entity';
 
 @Entity('stock_prediction')
+@Unique(['stockInfo', 'predicted_at'])
 export class StockPrediction {
   @PrimaryGeneratedColumn()
   id: number;
