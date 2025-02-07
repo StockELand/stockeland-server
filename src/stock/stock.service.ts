@@ -84,15 +84,22 @@ export class StockService {
         .getRawOne();
 
       date = latestPrediction?.maxDate;
-      console.log(date);
     }
 
     // 2. 해당 날짜의 예측 데이터 조회
     const predictions = await this.predictRepository
       .createQueryBuilder('current')
+      .innerJoin('current.stockInfo', 'si')
+      .select([
+        'current.id AS id',
+        'current.symbol AS symbol',
+        'current.change_percent AS change_percent',
+        'current.predicted_at AS predicted_at',
+        'si.name AS name',
+      ])
       .where('DATE(current.predicted_at) = :date', { date })
       .orderBy('current.change_percent', 'DESC')
-      .getMany();
+      .getRawMany();
 
     // 3. 해당 날짜보다 이전의 가장 가까운 예측 날짜 찾기
     const previousPrediction = await this.predictRepository
@@ -107,7 +114,7 @@ export class StockService {
       // 이전 예측이 없으면 현재 예측 데이터만 반환
       return predictions.map((p) => ({
         ...p,
-        previous: null,
+        prev_change_percent: null,
       }));
     }
 
