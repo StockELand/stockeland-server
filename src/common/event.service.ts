@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 
 interface ProgressPayload {
   progress: number;
@@ -9,20 +9,27 @@ interface ProgressPayload {
 
 @Injectable()
 export class EventService {
-  private progressSubject = new Subject<ProgressPayload>();
+  private progressSubjects: Map<string, Subject<ProgressPayload>> = new Map();
 
   constructor(private readonly eventEmitter: EventEmitter2) {}
 
-  getEventStream() {
-    return this.progressSubject.asObservable();
+  private getOrCreateSubject(eventName: string): Subject<ProgressPayload> {
+    if (!this.progressSubjects.has(eventName)) {
+      this.progressSubjects.set(eventName, new Subject<ProgressPayload>());
+    }
+    return this.progressSubjects.get(eventName);
+  }
+
+  getEventStream(eventName: string): Observable<ProgressPayload> {
+    return this.getOrCreateSubject(eventName).asObservable();
   }
 
   emit(eventName: string, payload: ProgressPayload) {
-    this.eventEmitter.emit(eventName, payload);
+    this.eventEmitter.emit(eventName, { eventName, payload });
   }
 
   @OnEvent('progress.*')
-  handleEvent(payload: ProgressPayload) {
-    this.progressSubject.next(payload);
+  handleEvent({ eventName, payload }) {
+    this.getOrCreateSubject(eventName).next(payload);
   }
 }

@@ -2,6 +2,7 @@ import { Controller, Post, Sse } from '@nestjs/common';
 import { ParseService } from './parse.service';
 import { Observable } from 'rxjs';
 import { EventService } from 'src/common/event.service';
+import { EVENT_NAMES } from 'src/common/constants';
 
 @Controller('parse')
 export class ParseController {
@@ -19,9 +20,11 @@ export class ParseController {
   @Sse('progress')
   progress(): Observable<MessageEvent> {
     return new Observable((observer) => {
-      this.eventService.getEventStream().subscribe((progressData) => {
-        observer.next({ data: progressData } as MessageEvent);
-      });
+      this.eventService
+        .getEventStream(EVENT_NAMES.PROGRESS_PARSE)
+        .subscribe((progressData) => {
+          observer.next({ data: progressData } as MessageEvent);
+        });
     });
   }
 }
