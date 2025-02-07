@@ -1,4 +1,4 @@
-import { Controller, Get, Sse } from '@nestjs/common';
+import { Controller, Post, Sse } from '@nestjs/common';
 import { PredictService } from './predict.service';
 import { Observable } from 'rxjs';
 import { EventService } from 'src/common/event.service';
@@ -11,7 +11,7 @@ export class PredictController {
     private readonly eventService: EventService,
   ) {}
 
-  @Get('update')
+  @Post('update')
   async startParsing() {
     await this.predictService.startLearning();
     return { message: 'Stock parsing started' };
