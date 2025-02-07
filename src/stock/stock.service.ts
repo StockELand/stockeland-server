@@ -74,4 +74,68 @@ export class StockService {
       .orUpdate(['change_percent'], ['symbol', 'predicted_at'])
       .execute();
   }
+
+  async getPredictionsWithPrevious(date?: string) {
+    // 1. 최신 예측 날짜 찾기 (날짜가 없을 경우)
+    if (!date) {
+      const latestPrediction = await this.predictRepository
+        .createQueryBuilder('stock_prediction')
+        .select('MAX(predicted_at)', 'maxDate')
+        .getRawOne();
+
+      date = latestPrediction?.maxDate;
+    }
+
+    // 2. 해당 날짜의 예측 데이터 조회
+    const predictions = await this.predictRepository
+      .createQueryBuilder('current')
+      .innerJoin('current.stockInfo', 'si')
+      .select([
+        'current.id AS id',
+        'current.symbol AS symbol',
+        'current.change_percent AS change_percent',
+        'current.predicted_at AS predicted_at',
+        'si.name AS name',
+      ])
+      .where('DATE(current.predicted_at) = :date', { date })
+      .orderBy('current.change_percent', 'DESC')
+      .getRawMany();
+
+    // 3. 해당 날짜보다 이전의 가장 가까운 예측 날짜 찾기
+    const previousPrediction = await this.predictRepository
+      .createQueryBuilder('stock_prediction')
+      .select('MAX(predicted_at)', 'maxDate')
+      .where('predicted_at < :date', { date })
+      .getRawOne();
+
+    const previousDate = previousPrediction?.maxDate;
+
+    if (!previousDate) {
+      // 이전 예측이 없으면 현재 예측 데이터만 반환
+      return predictions.map((p) => ({
+        ...p,
+        prev_change_percent: null,
+      }));
+    }
+
+    // 4. 이전 날짜의 예측 데이터 조회 (쿼리 최적화)
+    const previousPredictions = await this.predictRepository
+      .createQueryBuilder('previous')
+      .where('DATE(previous.predicted_at) = :previousDate', { previousDate })
+      .select('previous.symbol', 'symbol')
+      .addSelect('previous.change_percent', 'change_percent')
+      .addSelect('previous.predicted_at', 'predicted_at')
+      .getRawMany();
+
+    // 5. 이전 데이터 매핑
+    const previousMap = new Map(
+      previousPredictions.map((p) => [p.symbol, p.change_percent]),
+    );
+
+    // 6. 결과 반환 (이전 예측값 추가)
+    return predictions.map((p) => ({
+      ...p,
+      prev_change_percent: previousMap.get(p.symbol) || null,
+    }));
+  }
 }
