@@ -58,8 +58,9 @@ export class StockService {
 
   async savePredictions(
     predictions: { symbol: string; change_percent: number }[],
+    date: string,
   ): Promise<void> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(date).toISOString().split('T')[0];
 
     await this.predictRepository
       .createQueryBuilder()
