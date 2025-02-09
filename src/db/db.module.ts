@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
         database: configService.get('DB_NAME'),
         autoLoadEntities: true,
         synchronize: true,
+        timezone: 'Z',
       }),
     }),
   ],
