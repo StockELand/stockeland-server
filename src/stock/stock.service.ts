@@ -76,15 +76,32 @@ export class StockService {
       .execute();
   }
 
+  async getTradingDate(daysAgo?: number, dateStr?: string): Promise<string> {
+    let query = this.stockRepository
+      .createQueryBuilder('sp')
+      .select('date')
+      .distinct(true)
+      .orderBy('date', 'DESC');
+
+    // 특정 날짜가 주어진 경우, 해당 날짜보다 이전의 거래일을 조회
+    if (dateStr) {
+      query = query.where('date <= :date', { date: dateStr });
+    }
+
+    // 특정 날짜 기준 N일 전 거래일 가져오기
+    if (daysAgo) {
+      query = query.skip(daysAgo).take(1);
+    } else {
+      query = query.take(1);
+    }
+    const result = await query.getRawOne();
+    return result?.date || null;
+  }
+
   async getPredictionsWithPrevious(date?: string) {
     // 1. 최신 예측 날짜 찾기 (날짜가 없을 경우)
     if (!date) {
-      const latestPrediction = await this.predictRepository
-        .createQueryBuilder('stock_prediction')
-        .select('MAX(predicted_at)', 'maxDate')
-        .getRawOne();
-
-      date = latestPrediction?.maxDate;
+      date = await this.getTradingDate();
     }
 
     // 2. 해당 날짜의 예측 데이터 조회
@@ -103,13 +120,7 @@ export class StockService {
       .getRawMany();
 
     // 3. 해당 날짜보다 이전의 가장 가까운 예측 날짜 찾기
-    const previousPrediction = await this.predictRepository
-      .createQueryBuilder('stock_prediction')
-      .select('MAX(predicted_at)', 'maxDate')
-      .where('predicted_at < :date', { date })
-      .getRawOne();
-
-    const previousDate = previousPrediction?.maxDate;
+    const previousDate = await this.getTradingDate(1, date);
 
     if (!previousDate) {
       // 이전 예측이 없으면 현재 예측 데이터만 반환
@@ -118,7 +129,6 @@ export class StockService {
         prev_change_percent: null,
       }));
     }
-
     // 4. 이전 날짜의 예측 데이터 조회 (쿼리 최적화)
     const previousPredictions = await this.predictRepository
       .createQueryBuilder('previous')
@@ -138,5 +148,70 @@ export class StockService {
       ...p,
       prev_change_percent: previousMap.get(p.symbol) || null,
     }));
+  }
+
+  async getLatestAndPreviousStockData() {
+    // 최신 거래일을 찾는 서브쿼리
+    const latestTradeSubQuery = this.stockRepository
+      .createQueryBuilder('s1')
+      .select('s1.symbol', 'symbol')
+      .addSelect('MAX(s1.date)', 'latest_date')
+      .groupBy('s1.symbol');
+
+    // 최신 거래일보다 이전 거래일을 찾는 서브쿼리
+    const previousTradeSubQuery = this.stockRepository
+      .createQueryBuilder('s2')
+      .select('s2.symbol', 'symbol')
+      .addSelect('MAX(s2.date)', 'prev_date')
+      .where((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('MAX(s3.date)')
+          .from(StockData, 's3')
+          .where('s3.symbol = s2.symbol')
+          .getQuery();
+        return `s2.date < (${subQuery})`;
+      })
+      .groupBy('s2.symbol');
+
+    // 최종 데이터 조회
+    const query = this.stockRepository
+      .createQueryBuilder('s1')
+      .select([
+        's1.symbol AS symbol',
+        'latest.latest_date AS latest_date',
+        's1.close AS latest_close',
+        'p1.change_percent AS latest_change_percent',
+        'prev.prev_date AS prev_date',
+        's2.close AS prev_close',
+        'p2.change_percent AS prev_change_percent',
+      ])
+      .innerJoin(
+        `(${latestTradeSubQuery.getQuery()})`,
+        'latest',
+        's1.symbol = latest.symbol AND s1.date = latest.latest_date',
+      )
+      .leftJoin(
+        `(${previousTradeSubQuery.getQuery()})`,
+        'prev',
+        's1.symbol = prev.symbol',
+      )
+      .leftJoin(
+        StockData,
+        's2',
+        's2.symbol = prev.symbol AND s2.date = prev.prev_date',
+      )
+      .leftJoin(
+        'stock_prediction',
+        'p1',
+        's1.symbol = p1.symbol AND s1.date = p1.predicted_at',
+      )
+      .leftJoin(
+        'stock_prediction',
+        'p2',
+        's2.symbol = p2.symbol AND s2.date = p2.predicted_at',
+      );
+
+    return query.getRawMany();
   }
 }

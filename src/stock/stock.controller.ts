@@ -8,4 +8,9 @@ export class StockController {
   async getPredictions(@Query('date') date?: string) {
     return this.stockService.getPredictionsWithPrevious(date);
   }
+
+  @Get('all')
+  async getAll() {
+    return this.stockService.getLatestAndPreviousStockData();
+  }
 }
