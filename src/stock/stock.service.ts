@@ -16,14 +16,14 @@ export class StockService {
     private predictRepository: Repository<StockPrediction>,
   ) {}
 
-  async findAllSymbol(): Promise<string[]> {
+  async getAllSymbol(): Promise<string[]> {
     const symbols = (
       await this.stockInfoRepository.find({ select: ['symbol'] })
     ).map((info) => info.symbol);
     return symbols;
   }
 
-  async findLast100StockData(): Promise<any[]> {
+  async getLast100Close(): Promise<any[]> {
     const today = new Date();
     const hundredDaysAgo = new Date();
     hundredDaysAgo.setDate(today.getDate() - 100);
@@ -37,7 +37,7 @@ export class StockService {
       .getMany();
   }
 
-  async saveToDatabase(data: any[]): Promise<void> {
+  async saveClose(data: any[]): Promise<void> {
     if (data.length === 0) return;
 
     try {
