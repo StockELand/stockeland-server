@@ -150,7 +150,6 @@ export class StockService {
         prev_change_percent: previousMap.get(p.symbol) ?? null,
       }))
       .sort((a, b) => b.change_percent - a.change_percent);
-    console.log(result);
     return result;
   }
 
