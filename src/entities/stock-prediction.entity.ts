@@ -1,6 +1,5 @@
 import {
   Column,
-  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -18,11 +17,11 @@ export class StockPrediction {
   @Column()
   symbol: string;
 
-  @Column({ type: 'float' })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   change_percent: number;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  predicted_at: Date;
+  @Column({ type: 'date' })
+  predicted_at: string;
 
   @ManyToOne(() => StockInfoData, (stockInfo) => stockInfo.stockData)
   @JoinColumn({ name: 'symbol' })

@@ -20,7 +20,7 @@ export class ParseProcessor {
       state: 'Ready',
     });
 
-    const symbols = await this.stockService.findAllSymbol();
+    const symbols = await this.stockService.getAllSymbol();
 
     try {
       const finalData = await PythonRunner.run('src/parse/parse.py', {
@@ -43,7 +43,7 @@ export class ParseProcessor {
         state: 'Saving',
       });
 
-      await this.stockService.saveToDatabase(finalData);
+      await this.stockService.saveClose(finalData);
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 100,
