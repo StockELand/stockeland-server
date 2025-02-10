@@ -13,4 +13,8 @@ export class StockController {
   async getAll() {
     return this.stockService.getLatestAndPreviousStockData();
   }
+  @Get('symbols')
+  async getAllSymbols() {
+    return this.stockService.getAllSymbol();
+  }
 }
