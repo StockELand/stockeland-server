@@ -22,7 +22,6 @@ export class PredictProcessor {
 
     try {
       const last100StockData = await this.stockService.getLast100Close();
-      const lastDate = last100StockData[last100StockData.length - 1].date;
 
       const finalData = await PythonRunner.run('src/predict/predict.py', {
         stdInData: last100StockData,
@@ -39,7 +38,7 @@ export class PredictProcessor {
         },
       });
 
-      await this.stockService.savePredictions(finalData, lastDate);
+      await this.stockService.savePredictions(finalData);
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
         progress: 100,

@@ -58,9 +58,11 @@ export class StockService {
 
   async savePredictions(
     predictions: { symbol: string; change_percent: number }[],
-    date: string,
+    date?: string,
   ): Promise<void> {
-    const today = new Date(date).toISOString().split('T')[0];
+    const today = new Date(date ? date : await this.getTradingDate())
+      .toISOString()
+      .split('T')[0];
 
     await this.predictRepository
       .createQueryBuilder()
@@ -95,11 +97,11 @@ export class StockService {
       query = query.take(1);
     }
     const result = await query.getRawOne();
-    return result?.date || null;
+    return new Date(result?.date).toISOString().slice(0, 10) || null;
   }
 
   async getPredictionsWithPrevious(date?: string) {
-    // 1. 최신 예측 날짜 찾기 (날짜가 없을 경우)
+    // 1. 최신 예측 날짜 찾기
     if (!date) {
       date = await this.getTradingDate();
     }
@@ -119,23 +121,21 @@ export class StockService {
       .orderBy('current.change_percent', 'DESC')
       .getRawMany();
 
-    // 3. 해당 날짜보다 이전의 가장 가까운 예측 날짜 찾기
+    // 3. 이전 예측 날짜 찾기
     const previousDate = await this.getTradingDate(1, date);
-
     if (!previousDate) {
-      // 이전 예측이 없으면 현재 예측 데이터만 반환
       return predictions.map((p) => ({
         ...p,
         prev_change_percent: null,
       }));
     }
-    // 4. 이전 날짜의 예측 데이터 조회 (쿼리 최적화)
+
+    // 4. 이전 날짜의 예측 데이터 조회
     const previousPredictions = await this.predictRepository
       .createQueryBuilder('previous')
       .where('DATE(previous.predicted_at) = :previousDate', { previousDate })
       .select('previous.symbol', 'symbol')
       .addSelect('previous.change_percent', 'change_percent')
-      .addSelect('previous.predicted_at', 'predicted_at')
       .getRawMany();
 
     // 5. 이전 데이터 매핑
@@ -143,11 +143,15 @@ export class StockService {
       previousPredictions.map((p) => [p.symbol, p.change_percent]),
     );
 
-    // 6. 결과 반환 (이전 예측값 추가)
-    return predictions.map((p) => ({
-      ...p,
-      prev_change_percent: previousMap.get(p.symbol) || null,
-    }));
+    // 6. 최종 데이터 반환 및 정렬 보장
+    const result = predictions
+      .map((p) => ({
+        ...p,
+        prev_change_percent: previousMap.get(p.symbol) ?? null,
+      }))
+      .sort((a, b) => b.change_percent - a.change_percent);
+    console.log(result);
+    return result;
   }
 
   async getLatestAndPreviousStockData() {
@@ -159,26 +163,21 @@ export class StockService {
       .groupBy('s1.symbol');
 
     // 최신 거래일보다 이전 거래일을 찾는 서브쿼리
-    const previousTradeSubQuery = this.stockRepository
-      .createQueryBuilder('s2')
-      .select('s2.symbol', 'symbol')
-      .addSelect('MAX(s2.date)', 'prev_date')
-      .where((qb) => {
-        const subQuery = qb
-          .subQuery()
-          .select('MAX(s3.date)')
-          .from(StockData, 's3')
-          .where('s3.symbol = s2.symbol')
-          .getQuery();
-        return `s2.date < (${subQuery})`;
-      })
-      .groupBy('s2.symbol');
+    const latestTradingDate = await this.getTradingDate();
+    const previousTradeSubQuery = `
+    SELECT s2.symbol, MAX(s2.date) AS prev_date
+    FROM stock_data s2
+    WHERE s2.date < '${latestTradingDate}'
+    GROUP BY s2.symbol
+  `;
 
     // 최종 데이터 조회
     const query = this.stockRepository
       .createQueryBuilder('s1')
+      .innerJoin('s1.stockInfo', 'si')
       .select([
         's1.symbol AS symbol',
+        'si.name AS name',
         'latest.latest_date AS latest_date',
         's1.close AS latest_close',
         'p1.change_percent AS latest_change_percent',
@@ -191,11 +190,7 @@ export class StockService {
         'latest',
         's1.symbol = latest.symbol AND s1.date = latest.latest_date',
       )
-      .leftJoin(
-        `(${previousTradeSubQuery.getQuery()})`,
-        'prev',
-        's1.symbol = prev.symbol',
-      )
+      .leftJoin(`(${previousTradeSubQuery})`, 'prev', 's1.symbol = prev.symbol')
       .leftJoin(
         StockData,
         's2',
