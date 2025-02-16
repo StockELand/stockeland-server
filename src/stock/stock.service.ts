@@ -37,22 +37,27 @@ export class StockService {
       .getMany();
   }
 
-  async saveClose(data: any[]): Promise<void> {
-    if (data.length === 0) return;
+  async saveClose(data: any[]): Promise<number> {
+    if (data.length === 0) return 0;
 
     try {
-      await this.stockRepository
+      const result = await this.stockRepository
         .createQueryBuilder()
         .insert()
         .into(StockData)
         .values(data)
         .orUpdate(
-          ['open', 'high', 'low', 'close', 'volume'],
-          ['symbol', 'date'],
+          ['open', 'high', 'low', 'close', 'volume'], // 업데이트 대상 컬럼
+          ['symbol', 'date'], // 중복 체크 기준 컬럼
         )
         .execute();
+
+      const affectedRows = result.raw?.affectedRows ?? data.length;
+
+      return affectedRows;
     } catch (error) {
       console.error(`❌ Bulk insert/update failed: ${error.message}`);
+      return 0; // 실패 시 0 반환
     }
   }
 
