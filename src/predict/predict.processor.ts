@@ -56,7 +56,7 @@ export class PredictProcessor {
         'success',
         modifiedCount,
         executionTime,
-        'Parsing completed.',
+        'Prediction completed.',
       );
     } catch (error) {
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
