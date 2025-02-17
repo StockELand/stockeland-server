@@ -23,8 +23,24 @@ export class PredictController {
       return { message: '날짜를 YYYY-MM-DD 형식으로 입력하세요.' };
     }
 
-    const logs = await this.predictionLogService.getLogsByDate(date);
-    return { date, logs };
+    return await this.predictionLogService.getLogsByDate(date);
+  }
+
+  @Get('status')
+  async getParseStatus(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    if (!startDate || !endDate) {
+      return {
+        message: 'startDate와 endDate를 YYYY-MM-DD 형식으로 입력하세요.',
+      };
+    }
+
+    return await this.predictionLogService.getParseStatusByDateRange(
+      startDate,
+      endDate,
+    );
   }
 
   @Post('update')
