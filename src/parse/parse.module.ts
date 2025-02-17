@@ -3,9 +3,10 @@ import { ParseService } from './parse.service';
 import { ParseController } from './parse.controller';
 import { ParseProcessor } from './parse.processor';
 import { StockModule } from 'src/stock/stock.module';
+import { LogsModule } from 'src/logs/logs.module';
 
 @Module({
-  imports: [StockModule],
+  imports: [StockModule, LogsModule],
   controllers: [ParseController],
   providers: [ParseService, ParseProcessor],
   exports: [ParseService],

@@ -37,45 +37,61 @@ export class StockService {
       .getMany();
   }
 
-  async saveClose(data: any[]): Promise<void> {
-    if (data.length === 0) return;
+  async saveClose(data: any[]): Promise<number> {
+    if (data.length === 0) return 0;
 
     try {
-      await this.stockRepository
+      const result = await this.stockRepository
         .createQueryBuilder()
         .insert()
         .into(StockData)
         .values(data)
         .orUpdate(
-          ['open', 'high', 'low', 'close', 'volume'],
-          ['symbol', 'date'],
+          ['open', 'high', 'low', 'close', 'volume'], // 업데이트 대상 컬럼
+          ['symbol', 'date'], // 중복 체크 기준 컬럼
         )
         .execute();
+
+      const affectedRows = result.raw?.affectedRows ?? data.length;
+
+      return affectedRows;
     } catch (error) {
       console.error(`❌ Bulk insert/update failed: ${error.message}`);
+      return 0; // 실패 시 0 반환
     }
   }
 
   async savePredictions(
     predictions: { symbol: string; change_percent: number }[],
     date?: string,
-  ): Promise<void> {
-    const today = new Date(date ? date : await this.getTradingDate())
-      .toISOString()
-      .split('T')[0];
+  ): Promise<number> {
+    if (predictions.length === 0) return 0;
 
-    await this.predictRepository
-      .createQueryBuilder()
-      .insert()
-      .into(StockPrediction)
-      .values(
-        predictions.map((prediction) => ({
-          ...prediction,
-          predicted_at: today,
-        })),
-      )
-      .orUpdate(['change_percent'], ['symbol', 'predicted_at'])
-      .execute();
+    try {
+      const today = new Date(date ? date : await this.getTradingDate())
+        .toISOString()
+        .split('T')[0];
+
+      const result = await this.predictRepository
+        .createQueryBuilder()
+        .insert()
+        .into(StockPrediction)
+        .values(
+          predictions.map((prediction) => ({
+            ...prediction,
+            predicted_at: today,
+          })),
+        )
+        .orUpdate(['change_percent'], ['symbol', 'predicted_at'])
+        .execute();
+
+      const affectedRows = result.raw?.affectedRows ?? predictions.length;
+
+      return affectedRows;
+    } catch (error) {
+      console.error(`❌ Bulk insert/update failed: ${error.message}`);
+      return 0; // 실패 시 0 반환
+    }
   }
 
   async getTradingDate(daysAgo?: number, dateStr?: string): Promise<string> {

@@ -3,9 +3,10 @@ import { PredictController } from './predict.controller';
 import { PredictService } from './predict.service';
 import { StockModule } from 'src/stock/stock.module';
 import { PredictProcessor } from './predict.processor';
+import { LogsModule } from 'src/logs/logs.module';
 
 @Module({
-  imports: [StockModule],
+  imports: [StockModule, LogsModule],
   controllers: [PredictController],
   providers: [PredictService, PredictProcessor],
 })
