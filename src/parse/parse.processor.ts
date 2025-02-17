@@ -52,7 +52,7 @@ export class ParseProcessor {
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 100,
-        state: 'completed',
+        state: 'Completed',
       });
 
       const executionTime = (Date.now() - startTime) / 1000;
@@ -66,7 +66,7 @@ export class ParseProcessor {
     } catch (error) {
       this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 100,
-        state: 'failed',
+        state: 'Failed',
       });
       await this.parseLogService.logParseResult(
         'fail',

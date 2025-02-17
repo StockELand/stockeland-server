@@ -4,6 +4,7 @@ import { StockService } from 'src/stock/stock.service';
 import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
+import { PredictionLogService } from 'src/logs/predictions-log.service';
 
 @Processor(QUEUE_NAMES.PREDICT_QUEUE)
 @Injectable()
@@ -11,10 +12,14 @@ export class PredictProcessor {
   constructor(
     private readonly stockService: StockService,
     private readonly eventService: EventService,
+    private readonly predictionLogService: PredictionLogService,
   ) {}
 
   @Process(JOB_NAMES.LEARNING_PREDICT_MODEL)
   async handleLearning() {
+    const startTime = Date.now(); // 시작 시간 기록
+    let modifiedCount = 0; // 수정된 데이터 개수 초기화
+
     this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
       progress: 0,
       state: 'Ready',
@@ -29,7 +34,7 @@ export class PredictProcessor {
           if (out.progress) {
             this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
               progress: out.progress,
-              state: 'learning',
+              state: 'Learning',
             });
           }
         },
@@ -38,17 +43,33 @@ export class PredictProcessor {
         },
       });
 
-      await this.stockService.savePredictions(finalData);
+      modifiedCount = await this.stockService.savePredictions(finalData);
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
         progress: 100,
-        state: 'completed',
+        state: 'Completed',
       });
+
+      const executionTime = (Date.now() - startTime) / 1000;
+      // 성공 로그 저장
+      await this.predictionLogService.logParseResult(
+        'success',
+        modifiedCount,
+        executionTime,
+        'Parsing completed.',
+      );
     } catch (error) {
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
         progress: 100,
-        state: 'failed',
+        state: 'Failed',
       });
+
+      await this.predictionLogService.logParseResult(
+        'fail',
+        modifiedCount,
+        0,
+        error.toString(),
+      );
     }
   }
 }
