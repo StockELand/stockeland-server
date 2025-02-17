@@ -1,15 +1,31 @@
-import { Controller, Post, Sse } from '@nestjs/common';
+import { Controller, Get, Post, Query, Sse } from '@nestjs/common';
 import { ParseService } from './parse.service';
 import { Observable } from 'rxjs';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES } from 'src/common/constants';
+import { ParseLogService } from 'src/logs/parse-log.service';
 
 @Controller('parse')
 export class ParseController {
   constructor(
     private readonly parseService: ParseService,
     private readonly eventService: EventService,
+    private readonly parseLogService: ParseLogService,
   ) {}
+
+  /**
+   * 특정 날짜의 로그 조회
+   * @param date (YYYY-MM-DD)
+   */
+  @Get('logs')
+  async getLogs(@Query('date') date: string) {
+    if (!date) {
+      return { message: '날짜를 YYYY-MM-DD 형식으로 입력하세요.' };
+    }
+
+    const logs = await this.parseLogService.getLogsByDate(date);
+    return { date, logs };
+  }
 
   @Post('update')
   async startParsing() {
