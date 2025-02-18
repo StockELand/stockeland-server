@@ -112,10 +112,10 @@ if __name__ == "__main__":
 
         # 예측 상승률 계산
         price_changes = [
-            {"symbol": symbol, "change_percent": ((y_pred[0, i] - last_close_prices[0, i]) / last_close_prices[0, i]) * 100}
+            {"symbol": symbol, "changePercent": ((y_pred[0, i] - last_close_prices[0, i]) / last_close_prices[0, i]) * 100}
             for i, symbol in enumerate(df_pivot.columns)
         ]
-        price_changes.sort(key=lambda x: x["change_percent"], reverse=True)
+        price_changes.sort(key=lambda x: x["changePercent"], reverse=True)
         for stock in price_changes:
             print(json.dumps({"data": stock}), flush=True)
     else:

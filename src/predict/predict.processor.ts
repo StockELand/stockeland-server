@@ -4,7 +4,9 @@ import { StockService } from 'src/stock/stock.service';
 import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
-import { PredictionLogService } from 'src/logs/predictions-log.service';
+import { PredictionLogService } from 'src/log/prediction-log.service';
+import { PredictService } from './predict.service';
+import { StockPrice } from 'src/entities/stock-price.entity';
 
 @Processor(QUEUE_NAMES.PREDICT_QUEUE)
 @Injectable()
@@ -13,9 +15,10 @@ export class PredictProcessor {
     private readonly stockService: StockService,
     private readonly eventService: EventService,
     private readonly predictionLogService: PredictionLogService,
+    private readonly predictService: PredictService,
   ) {}
 
-  @Process(JOB_NAMES.LEARNING_PREDICT_MODEL)
+  @Process(JOB_NAMES.PREDICT_MODEL)
   async handleLearning() {
     const startTime = Date.now(); // 시작 시간 기록
     let modifiedCount = 0; // 수정된 데이터 개수 초기화
@@ -34,7 +37,7 @@ export class PredictProcessor {
           if (out.progress) {
             this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
               progress: out.progress,
-              state: 'Learning',
+              state: 'Predicting',
             });
           }
         },
@@ -43,7 +46,8 @@ export class PredictProcessor {
         },
       });
 
-      modifiedCount = await this.stockService.savePredictions(finalData);
+      const dates = this.extractParsingDates(last100StockData);
+      modifiedCount = await this.predictService.savePredictions(finalData);
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
         progress: 100,
@@ -52,24 +56,42 @@ export class PredictProcessor {
 
       const executionTime = (Date.now() - startTime) / 1000;
       // 성공 로그 저장
-      await this.predictionLogService.logParseResult(
-        'success',
+      await this.predictionLogService.recordPredictionLog({
+        status: 'success',
         modifiedCount,
         executionTime,
-        'Prediction completed.',
-      );
+        message: 'Prediction completed.',
+        ...dates,
+      });
     } catch (error) {
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
         progress: 100,
         state: 'Failed',
       });
 
-      await this.predictionLogService.logParseResult(
-        'fail',
+      await this.predictionLogService.recordPredictionLog({
+        status: 'fail',
         modifiedCount,
-        0,
-        error.toString(),
-      );
+        executionTime: 0,
+        message: error.toString(),
+      });
     }
+  }
+
+  extractParsingDates(finalData: StockPrice[]) {
+    if (finalData.length === 0) {
+      return {
+        lastDataDate: null,
+      };
+    }
+
+    // date 기준으로 정렬
+    const sortedData = [...finalData].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+
+    return {
+      lastDataDate: sortedData[sortedData.length - 1].date,
+    };
   }
 }

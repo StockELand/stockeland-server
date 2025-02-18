@@ -1,34 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  PredictionLog,
-  PredictionStatus,
-} from 'src/entities/prediction-log.entity';
+import { LogPrediction } from 'src/entities/log-prediction.entity';
 import { Between, Repository } from 'typeorm';
 
 @Injectable()
 export class PredictionLogService {
   constructor(
-    @InjectRepository(PredictionLog)
-    private readonly predictionLogRepository: Repository<PredictionLog>,
+    @InjectRepository(LogPrediction)
+    private readonly predictionLogRepository: Repository<LogPrediction>,
   ) {}
 
-  async logParseResult(
-    status: PredictionStatus,
-    modifiedCount: number,
-    executionTime: number,
-    message?: string,
-  ) {
-    const log = this.predictionLogRepository.create({
-      status,
-      modifiedCount,
-      executionTime,
-      message,
-    });
+  async recordPredictionLog(predictionLog: LogPrediction) {
+    const log = this.predictionLogRepository.create(predictionLog);
     return await this.predictionLogRepository.save(log);
   }
 
-  async getLogsByDate(date: string): Promise<PredictionLog[]> {
+  async getLogsByDate(date: string): Promise<LogPrediction[]> {
     const startDate = new Date(`${date}T00:00:00.000Z`);
     const endDate = new Date(`${date}T23:59:59.999Z`);
 
@@ -40,7 +27,7 @@ export class PredictionLogService {
     });
   }
 
-  async getParseStatusByDateRange(startDate: string, endDate: string) {
+  async getPredictionStatusByDateRange(startDate: string, endDate: string) {
     const start = new Date(`${startDate}T00:00:00.000Z`);
     const end = new Date(`${endDate}T23:59:59.999Z`);
 

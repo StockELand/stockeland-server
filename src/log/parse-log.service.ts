@@ -1,31 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ParseLog, ParseStatus } from 'src/entities/parse-log.entity';
+import { LogParse } from 'src/entities/log-parse.entity';
 import { Between, Repository } from 'typeorm';
 
 @Injectable()
 export class ParseLogService {
   constructor(
-    @InjectRepository(ParseLog)
-    private readonly parseLogRepository: Repository<ParseLog>,
+    @InjectRepository(LogParse)
+    private readonly parseLogRepository: Repository<LogParse>,
   ) {}
 
-  async logParseResult(
-    status: ParseStatus,
-    modifiedCount: number,
-    executionTime: number,
-    message?: string,
-  ) {
-    const log = this.parseLogRepository.create({
-      status,
-      modifiedCount,
-      executionTime,
-      message,
-    });
+  async recordParseLog(data: LogParse) {
+    const log = this.parseLogRepository.create(data);
     return await this.parseLogRepository.save(log);
   }
 
-  async getLogsByDate(date: string): Promise<ParseLog[]> {
+  async getLogsByDate(date: string): Promise<LogParse[]> {
     const startDate = new Date(`${date}T00:00:00.000Z`);
     const endDate = new Date(`${date}T23:59:59.999Z`);
 

@@ -10,5 +10,5 @@ export const QUEUE_NAMES = {
 
 export const JOB_NAMES = {
   PARSE_STOCK: 'parse-stock',
-  LEARNING_PREDICT_MODEL: 'learning-predict-model',
+  PREDICT_MODEL: 'predict-model',
 };

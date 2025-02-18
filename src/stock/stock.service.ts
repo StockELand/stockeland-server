@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { StockInfoData } from 'src/entities/stock-info.entity';
+import { StockInfo } from 'src/entities/stock-info.entity';
 import { StockPrediction } from 'src/entities/stock-prediction.entity';
-import { StockData } from 'src/entities/stock.entity';
+import { StockPrice } from 'src/entities/stock-price.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class StockService {
   constructor(
-    @InjectRepository(StockData)
-    private stockRepository: Repository<StockData>,
-    @InjectRepository(StockInfoData)
-    private stockInfoRepository: Repository<StockInfoData>,
+    @InjectRepository(StockPrice)
+    private stockRepository: Repository<StockPrice>,
+    @InjectRepository(StockInfo)
+    private stockInfoRepository: Repository<StockInfo>,
     @InjectRepository(StockPrediction)
-    private predictRepository: Repository<StockPrediction>,
+    private stockPredictionRepository: Repository<StockPrediction>,
   ) {}
 
   async getAllSymbol(): Promise<string[]> {
@@ -23,7 +23,7 @@ export class StockService {
     return symbols;
   }
 
-  async getLast100Close(): Promise<any[]> {
+  async getLast100Close(): Promise<StockPrice[]> {
     const today = new Date();
     const hundredDaysAgo = new Date();
     hundredDaysAgo.setDate(today.getDate() - 100);
@@ -35,63 +35,6 @@ export class StockService {
       })
       .orderBy('stock.date', 'ASC') // 날짜 오름차순 정렬
       .getMany();
-  }
-
-  async saveClose(data: any[]): Promise<number> {
-    if (data.length === 0) return 0;
-
-    try {
-      const result = await this.stockRepository
-        .createQueryBuilder()
-        .insert()
-        .into(StockData)
-        .values(data)
-        .orUpdate(
-          ['open', 'high', 'low', 'close', 'volume'], // 업데이트 대상 컬럼
-          ['symbol', 'date'], // 중복 체크 기준 컬럼
-        )
-        .execute();
-
-      const affectedRows = result.raw?.affectedRows ?? data.length;
-
-      return affectedRows;
-    } catch (error) {
-      console.error(`❌ Bulk insert/update failed: ${error.message}`);
-      return 0; // 실패 시 0 반환
-    }
-  }
-
-  async savePredictions(
-    predictions: { symbol: string; change_percent: number }[],
-    date?: string,
-  ): Promise<number> {
-    if (predictions.length === 0) return 0;
-
-    try {
-      const today = new Date(date ? date : await this.getTradingDate())
-        .toISOString()
-        .split('T')[0];
-
-      const result = await this.predictRepository
-        .createQueryBuilder()
-        .insert()
-        .into(StockPrediction)
-        .values(
-          predictions.map((prediction) => ({
-            ...prediction,
-            predicted_at: today,
-          })),
-        )
-        .orUpdate(['change_percent'], ['symbol', 'predicted_at'])
-        .execute();
-
-      const affectedRows = result.raw?.affectedRows ?? predictions.length;
-
-      return affectedRows;
-    } catch (error) {
-      console.error(`❌ Bulk insert/update failed: ${error.message}`);
-      return 0; // 실패 시 0 반환
-    }
   }
 
   async getTradingDate(daysAgo?: number, dateStr?: string): Promise<string> {
@@ -123,14 +66,14 @@ export class StockService {
     }
 
     // 2. 해당 날짜의 예측 데이터 조회
-    const predictions = await this.predictRepository
+    const predictions = await this.stockPredictionRepository
       .createQueryBuilder('current')
       .innerJoin('current.stockInfo', 'si')
       .select([
         'current.id AS id',
         'current.symbol AS symbol',
-        'current.change_percent AS change_percent',
-        'current.predicted_at AS predicted_at',
+        'current.change_percent AS changePercent',
+        'current.predicted_at AS predictedAt',
         'si.name AS name',
       ])
       .where('DATE(current.predicted_at) = :date', { date })
@@ -147,25 +90,25 @@ export class StockService {
     }
 
     // 4. 이전 날짜의 예측 데이터 조회
-    const previousPredictions = await this.predictRepository
+    const previousPredictions = await this.stockPredictionRepository
       .createQueryBuilder('previous')
       .where('DATE(previous.predicted_at) = :previousDate', { previousDate })
       .select('previous.symbol', 'symbol')
-      .addSelect('previous.change_percent', 'change_percent')
+      .addSelect('previous.change_percent', 'changePercent')
       .getRawMany();
 
     // 5. 이전 데이터 매핑
     const previousMap = new Map(
-      previousPredictions.map((p) => [p.symbol, p.change_percent]),
+      previousPredictions.map((p) => [p.symbol, p.changePercent]),
     );
 
     // 6. 최종 데이터 반환 및 정렬 보장
     const result = predictions
       .map((p) => ({
         ...p,
-        prev_change_percent: previousMap.get(p.symbol) ?? null,
+        prevChangePercent: previousMap.get(p.symbol) ?? null,
       }))
-      .sort((a, b) => b.change_percent - a.change_percent);
+      .sort((a, b) => b.changePercent - a.changePercent);
     return result;
   }
 
@@ -181,7 +124,7 @@ export class StockService {
     const latestTradingDate = await this.getTradingDate();
     const previousTradeSubQuery = `
     SELECT s2.symbol, MAX(s2.date) AS prev_date
-    FROM stock_data s2
+    FROM stock_price s2
     WHERE s2.date < '${latestTradingDate}'
     GROUP BY s2.symbol
   `;
@@ -193,12 +136,12 @@ export class StockService {
       .select([
         's1.symbol AS symbol',
         'si.name AS name',
-        'latest.latest_date AS latest_date',
-        's1.close AS latest_close',
-        'p1.change_percent AS latest_change_percent',
-        'prev.prev_date AS prev_date',
-        's2.close AS prev_close',
-        'p2.change_percent AS prev_change_percent',
+        'latest.latest_date AS latestDate',
+        's1.close AS latestClose',
+        'p1.change_percent AS latestChangePercent',
+        'prev.prev_date AS prevDate',
+        's2.close AS prevClose',
+        'p2.change_percent AS prevChangePercent',
       ])
       .innerJoin(
         `(${latestTradeSubQuery.getQuery()})`,
@@ -207,7 +150,7 @@ export class StockService {
       )
       .leftJoin(`(${previousTradeSubQuery})`, 'prev', 's1.symbol = prev.symbol')
       .leftJoin(
-        StockData,
+        StockPrice,
         's2',
         's2.symbol = prev.symbol AND s2.date = prev.prev_date',
       )

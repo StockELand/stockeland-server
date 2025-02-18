@@ -6,10 +6,10 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
-import { StockInfoData } from './stock-info.entity';
+import { StockInfo } from './stock-info.entity';
 
 @Entity('stock_prediction')
-@Unique(['stockInfo', 'predicted_at'])
+@Unique(['stockInfo', 'predictedAt'])
 export class StockPrediction {
   @PrimaryGeneratedColumn()
   id: number;
@@ -17,13 +17,13 @@ export class StockPrediction {
   @Column()
   symbol: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  change_percent: number;
+  @Column({ name: 'change_percent', type: 'decimal', precision: 10, scale: 2 })
+  changePercent: number;
 
-  @Column({ type: 'date' })
-  predicted_at: string;
+  @Column({ name: 'predicted_at', type: 'date' })
+  predictedAt: string;
 
-  @ManyToOne(() => StockInfoData, (stockInfo) => stockInfo.stockData)
+  @ManyToOne(() => StockInfo, (stockInfo) => stockInfo.stockPrice)
   @JoinColumn({ name: 'symbol' })
-  stockInfo: StockInfoData;
+  stockInfo: StockInfo;
 }
