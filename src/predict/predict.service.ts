@@ -14,10 +14,10 @@ export class PredictService {
     private readonly stockRepository: StockService,
   ) {}
 
-  async startLearning(): Promise<void> {
+  async startPredicting(): Promise<void> {
     await this.queueService.addJob(
       QUEUE_NAMES.PREDICT_QUEUE,
-      JOB_NAMES.LEARNING_PREDICT_MODEL,
+      JOB_NAMES.PREDICT_MODEL,
     );
   }
 

@@ -13,7 +13,7 @@ export class StockService {
     @InjectRepository(StockInfo)
     private stockInfoRepository: Repository<StockInfo>,
     @InjectRepository(StockPrediction)
-    private predictRepository: Repository<StockPrediction>,
+    private stockPredictionRepository: Repository<StockPrediction>,
   ) {}
 
   async getAllSymbol(): Promise<string[]> {
@@ -66,7 +66,7 @@ export class StockService {
     }
 
     // 2. 해당 날짜의 예측 데이터 조회
-    const predictions = await this.predictRepository
+    const predictions = await this.stockPredictionRepository
       .createQueryBuilder('current')
       .innerJoin('current.stockInfo', 'si')
       .select([
@@ -90,7 +90,7 @@ export class StockService {
     }
 
     // 4. 이전 날짜의 예측 데이터 조회
-    const previousPredictions = await this.predictRepository
+    const previousPredictions = await this.stockPredictionRepository
       .createQueryBuilder('previous')
       .where('DATE(previous.predicted_at) = :previousDate', { previousDate })
       .select('previous.symbol', 'symbol')

@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
 import { PredictService } from './predict.service';
-import { PredictLogService } from 'src/log/predict-log.service';
+import { PredictionLogService } from 'src/log/prediction-log.service';
 
 @Controller('predict')
 export class PredictController {
   constructor(
     private readonly predictService: PredictService,
-    private readonly predictionLogService: PredictLogService,
+    private readonly predictionLogService: PredictionLogService,
   ) {}
 
   @Get('logs')
@@ -29,14 +29,14 @@ export class PredictController {
       };
     }
 
-    return await this.predictionLogService.getPredictStatusByDateRange(
+    return await this.predictionLogService.getPredictionStatusByDateRange(
       startDate,
       endDate,
     );
   }
 
   @Get('')
-  async getPredictedDataByDate(@Query('date') date: string) {
+  async getPredictions(@Query('date') date: string) {
     if (!date) {
       return { message: '날짜를 YYYY-MM-DD 형식으로 입력하세요.' };
     }
@@ -46,7 +46,7 @@ export class PredictController {
 
   @Post('')
   async startParsing() {
-    await this.predictService.startLearning();
+    await this.predictService.startPredicting();
     return { message: 'Stock parsing started' };
   }
 }

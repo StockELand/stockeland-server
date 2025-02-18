@@ -5,10 +5,10 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 
-export type PredictStatus = 'success' | 'fail';
+export type PredictionStatus = 'success' | 'fail';
 
-@Entity('log_predict')
-export class LogPredict {
+@Entity('log_prediction')
+export class LogPrediction {
   @PrimaryGeneratedColumn()
   id: number; // 고유 ID
 
@@ -16,7 +16,7 @@ export class LogPredict {
   predictedAt: Date; // 파싱 실행 시간 (자동 생성)
 
   @Column({ type: 'enum', enum: ['success', 'fail'] })
-  status: PredictStatus; // 실행 상태
+  status: PredictionStatus; // 실행 상태
 
   @Column({ name: 'modified_count', type: 'int', default: 0 })
   modifiedCount: number; // 수정된 데이터 개수

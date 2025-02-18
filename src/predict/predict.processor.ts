@@ -4,7 +4,7 @@ import { StockService } from 'src/stock/stock.service';
 import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
-import { PredictLogService } from 'src/log/predict-log.service';
+import { PredictionLogService } from 'src/log/prediction-log.service';
 import { PredictService } from './predict.service';
 
 @Processor(QUEUE_NAMES.PREDICT_QUEUE)
@@ -13,11 +13,11 @@ export class PredictProcessor {
   constructor(
     private readonly stockService: StockService,
     private readonly eventService: EventService,
-    private readonly predictionLogService: PredictLogService,
+    private readonly predictionLogService: PredictionLogService,
     private readonly predictService: PredictService,
   ) {}
 
-  @Process(JOB_NAMES.LEARNING_PREDICT_MODEL)
+  @Process(JOB_NAMES.PREDICT_MODEL)
   async handleLearning() {
     const startTime = Date.now(); // 시작 시간 기록
     let modifiedCount = 0; // 수정된 데이터 개수 초기화
@@ -54,7 +54,7 @@ export class PredictProcessor {
 
       const executionTime = (Date.now() - startTime) / 1000;
       // 성공 로그 저장
-      await this.predictionLogService.recordPredictLog(
+      await this.predictionLogService.recordPredictionLog(
         'success',
         modifiedCount,
         executionTime,
@@ -66,7 +66,7 @@ export class PredictProcessor {
         state: 'Failed',
       });
 
-      await this.predictionLogService.recordPredictLog(
+      await this.predictionLogService.recordPredictionLog(
         'fail',
         modifiedCount,
         0,

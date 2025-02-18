@@ -1,35 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LogPredict, PredictStatus } from 'src/entities/log-predict.entity';
+import {
+  LogPrediction,
+  PredictionStatus,
+} from 'src/entities/log-prediction.entity';
 import { Between, Repository } from 'typeorm';
 
 @Injectable()
-export class PredictLogService {
+export class PredictionLogService {
   constructor(
-    @InjectRepository(LogPredict)
-    private readonly predictLogRepository: Repository<LogPredict>,
+    @InjectRepository(LogPrediction)
+    private readonly predictionLogRepository: Repository<LogPrediction>,
   ) {}
 
-  async recordPredictLog(
-    status: PredictStatus,
+  async recordPredictionLog(
+    status: PredictionStatus,
     modifiedCount: number,
     executionTime: number,
     message?: string,
   ) {
-    const log = this.predictLogRepository.create({
+    const log = this.predictionLogRepository.create({
       status,
       modifiedCount,
       executionTime,
       message,
     });
-    return await this.predictLogRepository.save(log);
+    return await this.predictionLogRepository.save(log);
   }
 
-  async getLogsByDate(date: string): Promise<LogPredict[]> {
+  async getLogsByDate(date: string): Promise<LogPrediction[]> {
     const startDate = new Date(`${date}T00:00:00.000Z`);
     const endDate = new Date(`${date}T23:59:59.999Z`);
 
-    return await this.predictLogRepository.find({
+    return await this.predictionLogRepository.find({
       where: {
         predictedAt: Between(startDate, endDate),
       },
@@ -37,12 +40,12 @@ export class PredictLogService {
     });
   }
 
-  async getPredictStatusByDateRange(startDate: string, endDate: string) {
+  async getPredictionStatusByDateRange(startDate: string, endDate: string) {
     const start = new Date(`${startDate}T00:00:00.000Z`);
     const end = new Date(`${endDate}T23:59:59.999Z`);
 
     // 주어진 날짜 범위 내의 모든 로그 조회
-    const logs = await this.predictLogRepository.find({
+    const logs = await this.predictionLogRepository.find({
       where: { predictedAt: Between(start, end) },
     });
 
