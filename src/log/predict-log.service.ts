@@ -1,35 +1,35 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LogPredict, PredictionStatus } from 'src/entities/log-predict.entity';
+import { LogPredict, PredictStatus } from 'src/entities/log-predict.entity';
 import { Between, Repository } from 'typeorm';
 
 @Injectable()
-export class PredictionLogService {
+export class PredictLogService {
   constructor(
     @InjectRepository(LogPredict)
-    private readonly predictionLogRepository: Repository<LogPredict>,
+    private readonly predictLogRepository: Repository<LogPredict>,
   ) {}
 
-  async logParseResult(
-    status: PredictionStatus,
+  async recordPredictLog(
+    status: PredictStatus,
     modifiedCount: number,
     executionTime: number,
     message?: string,
   ) {
-    const log = this.predictionLogRepository.create({
+    const log = this.predictLogRepository.create({
       status,
       modifiedCount,
       executionTime,
       message,
     });
-    return await this.predictionLogRepository.save(log);
+    return await this.predictLogRepository.save(log);
   }
 
   async getLogsByDate(date: string): Promise<LogPredict[]> {
     const startDate = new Date(`${date}T00:00:00.000Z`);
     const endDate = new Date(`${date}T23:59:59.999Z`);
 
-    return await this.predictionLogRepository.find({
+    return await this.predictLogRepository.find({
       where: {
         predictedAt: Between(startDate, endDate),
       },
@@ -37,12 +37,12 @@ export class PredictionLogService {
     });
   }
 
-  async getParseStatusByDateRange(startDate: string, endDate: string) {
+  async getPredictStatusByDateRange(startDate: string, endDate: string) {
     const start = new Date(`${startDate}T00:00:00.000Z`);
     const end = new Date(`${endDate}T23:59:59.999Z`);
 
     // 주어진 날짜 범위 내의 모든 로그 조회
-    const logs = await this.predictionLogRepository.find({
+    const logs = await this.predictLogRepository.find({
       where: { predictedAt: Between(start, end) },
     });
 

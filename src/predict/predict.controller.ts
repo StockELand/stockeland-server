@@ -3,14 +3,14 @@ import { PredictService } from './predict.service';
 import { Observable } from 'rxjs';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES } from 'src/common/constants';
-import { PredictionLogService } from 'src/log/predictions-log.service';
+import { PredictLogService } from 'src/log/predict-log.service';
 
 @Controller('predict')
 export class PredictController {
   constructor(
     private readonly predictService: PredictService,
     private readonly eventService: EventService,
-    private readonly predictionLogService: PredictionLogService,
+    private readonly predictionLogService: PredictLogService,
   ) {}
 
   @Get('')
@@ -46,7 +46,7 @@ export class PredictController {
       };
     }
 
-    return await this.predictionLogService.getParseStatusByDateRange(
+    return await this.predictionLogService.getPredictStatusByDateRange(
       startDate,
       endDate,
     );
