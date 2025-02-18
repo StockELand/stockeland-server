@@ -10,6 +10,7 @@ import { ParseModule } from './parse/parse.module';
 import { PredictModule } from './predict/predict.module';
 import { CommonModule } from './common/common.module';
 import { LogsModule } from './log/logs.module';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { LogsModule } from './log/logs.module';
     PredictModule,
     CommonModule,
     LogsModule,
+    EventModule,
   ],
   controllers: [AppController, ParseController],
   providers: [AppService],
