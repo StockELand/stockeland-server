@@ -1,15 +1,11 @@
-import { Controller, Get, Post, Query, Sse } from '@nestjs/common';
+import { Controller, Get, Post, Query } from '@nestjs/common';
 import { PredictService } from './predict.service';
-import { Observable } from 'rxjs';
-import { EventService } from 'src/common/event.service';
-import { EVENT_NAMES } from 'src/common/constants';
 import { PredictLogService } from 'src/log/predict-log.service';
 
 @Controller('predict')
 export class PredictController {
   constructor(
     private readonly predictService: PredictService,
-    private readonly eventService: EventService,
     private readonly predictionLogService: PredictLogService,
   ) {}
 
@@ -56,16 +52,5 @@ export class PredictController {
   async startParsing() {
     await this.predictService.startLearning();
     return { message: 'Stock parsing started' };
-  }
-
-  @Sse('progress')
-  progress(): Observable<MessageEvent> {
-    return new Observable((observer) => {
-      this.eventService
-        .getEventStream(EVENT_NAMES.PROGRESS_PREDICT)
-        .subscribe((progressData) => {
-          observer.next({ data: progressData } as MessageEvent);
-        });
-    });
   }
 }

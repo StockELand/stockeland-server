@@ -1,15 +1,11 @@
-import { Controller, Get, Post, Query, Sse } from '@nestjs/common';
+import { Controller, Get, Post, Query } from '@nestjs/common';
 import { ParseService } from './parse.service';
-import { Observable } from 'rxjs';
-import { EventService } from 'src/common/event.service';
-import { EVENT_NAMES } from 'src/common/constants';
 import { ParseLogService } from 'src/log/parse-log.service';
 
 @Controller('parse')
 export class ParseController {
   constructor(
     private readonly parseService: ParseService,
-    private readonly eventService: EventService,
     private readonly parseLogService: ParseLogService,
   ) {}
 
@@ -22,10 +18,6 @@ export class ParseController {
     return await this.parseService.getParsedDataByDate(date);
   }
 
-  /**
-   * 특정 날짜의 로그 조회
-   * @param date (YYYY-MM-DD)
-   */
   @Get('logs')
   async getLogs(@Query('date') date: string) {
     if (!date) {
@@ -56,16 +48,5 @@ export class ParseController {
   async startParsing() {
     await this.parseService.startParsing();
     return { message: 'Stock parsing started' };
-  }
-
-  @Sse('progress')
-  progress(): Observable<MessageEvent> {
-    return new Observable((observer) => {
-      this.eventService
-        .getEventStream(EVENT_NAMES.PROGRESS_PARSE)
-        .subscribe((progressData) => {
-          observer.next({ data: progressData } as MessageEvent);
-        });
-    });
   }
 }
