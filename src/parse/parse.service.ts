@@ -40,6 +40,7 @@ export class ParseService {
         .orUpdate(
           ['open', 'high', 'low', 'close', 'volume'],
           ['symbol', 'date'],
+          { skipUpdateIfNoValuesChanged: true },
         )
         .execute();
 

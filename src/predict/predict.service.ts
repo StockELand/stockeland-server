@@ -44,7 +44,9 @@ export class PredictService {
             predictedAt: today,
           })),
         )
-        .orUpdate(['change_percent'], ['symbol', 'predicted_at'])
+        .orUpdate(['change_percent'], ['symbol', 'predicted_at'], {
+          skipUpdateIfNoValuesChanged: true,
+        })
         .execute();
 
       const affectedRows = result.raw?.affectedRows ?? predictions.length;
