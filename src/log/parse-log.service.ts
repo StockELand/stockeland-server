@@ -10,7 +10,7 @@ export class ParseLogService {
     private readonly parseLogRepository: Repository<LogParse>,
   ) {}
 
-  async logParseResult(
+  async recordParseLog(
     status: ParseStatus,
     modifiedCount: number,
     executionTime: number,

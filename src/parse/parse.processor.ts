@@ -57,7 +57,7 @@ export class ParseProcessor {
 
       const executionTime = (Date.now() - startTime) / 1000;
       // 성공 로그 저장
-      await this.parseLogService.logParseResult(
+      await this.parseLogService.recordParseLog(
         'success',
         modifiedCount,
         executionTime,
@@ -68,7 +68,7 @@ export class ParseProcessor {
         progress: 100,
         state: 'Failed',
       });
-      await this.parseLogService.logParseResult(
+      await this.parseLogService.recordParseLog(
         'fail',
         modifiedCount,
         0,
