@@ -9,24 +9,6 @@ export class ParseController {
     private readonly parseLogService: ParseLogService,
   ) {}
 
-  @Get('')
-  async getParsedDataByDate(@Query('date') date: string) {
-    if (!date) {
-      return { message: '날짜를 YYYY-MM-DD 형식으로 입력하세요.' };
-    }
-
-    return await this.parseService.getParsedDataByDate(date);
-  }
-
-  @Get('logs')
-  async getLogs(@Query('date') date: string) {
-    if (!date) {
-      return { message: '날짜를 YYYY-MM-DD 형식으로 입력하세요.' };
-    }
-
-    return await this.parseLogService.getLogsByDate(date);
-  }
-
   @Get('status')
   async getParseStatus(
     @Query('startDate') startDate: string,
@@ -44,7 +26,25 @@ export class ParseController {
     );
   }
 
-  @Post('update')
+  @Get('logs')
+  async getLogs(@Query('date') date: string) {
+    if (!date) {
+      return { message: '날짜를 YYYY-MM-DD 형식으로 입력하세요.' };
+    }
+
+    return await this.parseLogService.getLogsByDate(date);
+  }
+
+  @Get('')
+  async getParsedData(@Query('date') date: string) {
+    if (!date) {
+      return { message: '날짜를 YYYY-MM-DD 형식으로 입력하세요.' };
+    }
+
+    return await this.parseService.getParsedDataByDate(date);
+  }
+
+  @Post('')
   async startParsing() {
     await this.parseService.startParsing();
     return { message: 'Stock parsing started' };
