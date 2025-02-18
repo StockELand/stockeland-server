@@ -22,7 +22,7 @@ export class PredictService {
   }
 
   async savePredictions(
-    predictions: { symbol: string; change_percent: number }[],
+    predictions: StockPrediction[],
     date?: string,
   ): Promise<number> {
     if (predictions.length === 0) return 0;

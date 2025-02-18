@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  LogPrediction,
-  PredictionStatus,
-} from 'src/entities/log-prediction.entity';
+import { LogPrediction } from 'src/entities/log-prediction.entity';
 import { Between, Repository } from 'typeorm';
 
 @Injectable()
@@ -13,18 +10,8 @@ export class PredictionLogService {
     private readonly predictionLogRepository: Repository<LogPrediction>,
   ) {}
 
-  async recordPredictionLog(
-    status: PredictionStatus,
-    modifiedCount: number,
-    executionTime: number,
-    message?: string,
-  ) {
-    const log = this.predictionLogRepository.create({
-      status,
-      modifiedCount,
-      executionTime,
-      message,
-    });
+  async recordPredictionLog(predictionLog: LogPrediction) {
+    const log = this.predictionLogRepository.create(predictionLog);
     return await this.predictionLogRepository.save(log);
   }
 
