@@ -10,7 +10,7 @@ export class ParseService {
   constructor(
     private readonly queueService: QueueService,
     @InjectRepository(StockPrice)
-    private stockRepository: Repository<StockPrice>,
+    private stockPriceRepository: Repository<StockPrice>,
   ) {}
 
   async startParsing(): Promise<void> {
@@ -21,10 +21,33 @@ export class ParseService {
   }
 
   async getParsedDataByDate(date: string) {
-    return await this.stockRepository.find({
+    return await this.stockPriceRepository.find({
       where: {
         date,
       },
     });
+  }
+
+  async saveParsedData(data: StockPrice[]): Promise<number> {
+    if (data.length === 0) return 0;
+
+    try {
+      const result = await this.stockPriceRepository
+        .createQueryBuilder()
+        .insert()
+        .into(StockPrice)
+        .values(data)
+        .orUpdate(
+          ['open', 'high', 'low', 'close', 'volume'],
+          ['symbol', 'date'],
+        )
+        .execute();
+
+      const affectedRows = result.raw?.affectedRows ?? data.length;
+
+      return affectedRows;
+    } catch (error) {
+      throw error;
+    }
   }
 }

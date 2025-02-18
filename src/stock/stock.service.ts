@@ -37,29 +37,6 @@ export class StockService {
       .getMany();
   }
 
-  async saveClose(data: any[]): Promise<number> {
-    if (data.length === 0) return 0;
-
-    try {
-      const result = await this.stockRepository
-        .createQueryBuilder()
-        .insert()
-        .into(StockPrice)
-        .values(data)
-        .orUpdate(
-          ['open', 'high', 'low', 'close', 'volume'], // 업데이트 대상 컬럼
-          ['symbol', 'date'], // 중복 체크 기준 컬럼
-        )
-        .execute();
-
-      const affectedRows = result.raw?.affectedRows ?? data.length;
-
-      return affectedRows;
-    } catch (error) {
-      throw error;
-    }
-  }
-
   async savePredictions(
     predictions: { symbol: string; change_percent: number }[],
     date?: string,

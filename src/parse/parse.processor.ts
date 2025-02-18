@@ -5,6 +5,7 @@ import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 import { ParseLogService } from 'src/log/parse-log.service';
+import { ParseService } from './parse.service';
 
 @Processor(QUEUE_NAMES.PARSE_QUEUE)
 @Injectable()
@@ -13,6 +14,7 @@ export class ParseProcessor {
     private readonly stockService: StockService,
     private readonly eventService: EventService,
     private readonly parseLogService: ParseLogService,
+    private readonly parseService: ParseService,
   ) {}
 
   @Process(JOB_NAMES.PARSE_STOCK)
@@ -48,7 +50,7 @@ export class ParseProcessor {
         state: 'Saving',
       });
 
-      modifiedCount = await this.stockService.saveClose(finalData);
+      modifiedCount = await this.parseService.saveParsedData(finalData);
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 100,
