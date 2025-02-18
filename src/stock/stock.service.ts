@@ -37,38 +37,6 @@ export class StockService {
       .getMany();
   }
 
-  async savePredictions(
-    predictions: { symbol: string; change_percent: number }[],
-    date?: string,
-  ): Promise<number> {
-    if (predictions.length === 0) return 0;
-
-    try {
-      const today = new Date(date ? date : await this.getTradingDate())
-        .toISOString()
-        .split('T')[0];
-
-      const result = await this.predictRepository
-        .createQueryBuilder()
-        .insert()
-        .into(StockPrediction)
-        .values(
-          predictions.map((prediction) => ({
-            ...prediction,
-            predictedAt: today,
-          })),
-        )
-        .orUpdate(['change_percent'], ['symbol', 'predicted_at'])
-        .execute();
-
-      const affectedRows = result.raw?.affectedRows ?? predictions.length;
-
-      return affectedRows;
-    } catch (error) {
-      throw error;
-    }
-  }
-
   async getTradingDate(daysAgo?: number, dateStr?: string): Promise<string> {
     let query = this.stockRepository
       .createQueryBuilder('sp')

@@ -5,6 +5,7 @@ import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 import { PredictLogService } from 'src/log/predict-log.service';
+import { PredictService } from './predict.service';
 
 @Processor(QUEUE_NAMES.PREDICT_QUEUE)
 @Injectable()
@@ -13,6 +14,7 @@ export class PredictProcessor {
     private readonly stockService: StockService,
     private readonly eventService: EventService,
     private readonly predictionLogService: PredictLogService,
+    private readonly predictService: PredictService,
   ) {}
 
   @Process(JOB_NAMES.LEARNING_PREDICT_MODEL)
@@ -43,7 +45,7 @@ export class PredictProcessor {
         },
       });
 
-      modifiedCount = await this.stockService.savePredictions(finalData);
+      modifiedCount = await this.predictService.savePredictions(finalData);
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
         progress: 100,
