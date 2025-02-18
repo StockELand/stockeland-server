@@ -6,11 +6,11 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { StockInfoData } from './stock-info.entity';
+import { StockInfo } from './stock-info.entity';
 
-@Entity('stock_data')
+@Entity('stock_price')
 @Unique(['stockInfo', 'date'])
-export class StockData {
+export class StockPrice {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -35,7 +35,7 @@ export class StockData {
   @Column({ type: 'bigint' })
   volume: number;
 
-  @ManyToOne(() => StockInfoData, (stockInfo) => stockInfo.stockData)
+  @ManyToOne(() => StockInfo, (stockInfo) => stockInfo.stockPrice)
   @JoinColumn({ name: 'symbol' })
-  stockInfo: StockInfoData;
+  stockInfo: StockInfo;
 }

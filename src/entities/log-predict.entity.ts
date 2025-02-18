@@ -7,8 +7,8 @@ import {
 
 export type PredictionStatus = 'success' | 'fail';
 
-@Entity('prediction_log')
-export class PredictionLog {
+@Entity('log_predict')
+export class LogPredict {
   @PrimaryGeneratedColumn()
   id: number; // 고유 ID
 
@@ -18,10 +18,10 @@ export class PredictionLog {
   @Column({ type: 'enum', enum: ['success', 'fail'] })
   status: PredictionStatus; // 실행 상태
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'modified_count', type: 'int', default: 0 })
   modifiedCount: number; // 수정된 데이터 개수
 
-  @Column({ type: 'float' })
+  @Column({ name: 'execution_time', type: 'float' })
   executionTime: number; // 실행 시간 (초)
 
   @Column({ type: 'text', nullable: true })

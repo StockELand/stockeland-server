@@ -7,8 +7,8 @@ import {
 
 export type ParseStatus = 'success' | 'fail';
 
-@Entity('parse_log')
-export class ParseLog {
+@Entity('log_parse')
+export class LogParse {
   @PrimaryGeneratedColumn()
   id: number; // 고유 ID
 
@@ -18,10 +18,10 @@ export class ParseLog {
   @Column({ type: 'enum', enum: ['success', 'fail'] })
   status: ParseStatus; // 실행 상태
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'modified_count', type: 'int', default: 0 })
   modifiedCount: number; // 수정된 데이터 개수
 
-  @Column({ type: 'float' })
+  @Column({ name: 'execution_time', type: 'float' })
   executionTime: number; // 실행 시간 (초)
 
   @Column({ type: 'text', nullable: true })

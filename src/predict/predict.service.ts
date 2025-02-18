@@ -21,7 +21,7 @@ export class PredictService {
   async getPredictedDataByDate(date: string) {
     return await this.predictionRepository.find({
       where: {
-        predicted_at: date,
+        predictedAt: date,
       },
     });
   }

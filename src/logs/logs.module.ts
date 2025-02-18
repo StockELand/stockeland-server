@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ParseLogService } from './parse-log.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ParseLog } from 'src/entities/parse-log.entity';
+import { LogParse } from 'src/entities/log-parse.entity';
 import { PredictionLogService } from './predictions-log.service';
-import { PredictionLog } from 'src/entities/prediction-log.entity';
+import { LogPredict } from 'src/entities/log-predict.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ParseLog, PredictionLog])],
+  imports: [TypeOrmModule.forFeature([LogParse, LogPredict])],
   providers: [ParseLogService, PredictionLogService],
   exports: [ParseLogService, PredictionLogService],
 })
