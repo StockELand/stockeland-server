@@ -4,7 +4,7 @@ import { StockService } from 'src/stock/stock.service';
 import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
-import { PredictionLogService } from 'src/logs/predictions-log.service';
+import { PredictionLogService } from 'src/log/predictions-log.service';
 
 @Processor(QUEUE_NAMES.PREDICT_QUEUE)
 @Injectable()

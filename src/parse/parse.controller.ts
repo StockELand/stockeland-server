@@ -3,7 +3,7 @@ import { ParseService } from './parse.service';
 import { Observable } from 'rxjs';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES } from 'src/common/constants';
-import { ParseLogService } from 'src/logs/parse-log.service';
+import { ParseLogService } from 'src/log/parse-log.service';
 
 @Controller('parse')
 export class ParseController {

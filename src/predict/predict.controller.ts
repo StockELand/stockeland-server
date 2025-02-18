@@ -3,7 +3,7 @@ import { PredictService } from './predict.service';
 import { Observable } from 'rxjs';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES } from 'src/common/constants';
-import { PredictionLogService } from 'src/logs/predictions-log.service';
+import { PredictionLogService } from 'src/log/predictions-log.service';
 
 @Controller('predict')
 export class PredictController {

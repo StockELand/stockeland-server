@@ -9,7 +9,7 @@ import { ParseController } from './parse/parse.controller';
 import { ParseModule } from './parse/parse.module';
 import { PredictModule } from './predict/predict.module';
 import { CommonModule } from './common/common.module';
-import { LogsModule } from './logs/logs.module';
+import { LogsModule } from './log/logs.module';
 
 @Module({
   imports: [

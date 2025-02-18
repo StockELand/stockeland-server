@@ -4,7 +4,7 @@ import { StockService } from 'src/stock/stock.service';
 import { PythonRunner } from 'src/common/python-runner';
 import { EventService } from 'src/common/event.service';
 import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
-import { ParseLogService } from 'src/logs/parse-log.service';
+import { ParseLogService } from 'src/log/parse-log.service';
 
 @Processor(QUEUE_NAMES.PARSE_QUEUE)
 @Injectable()
