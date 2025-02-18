@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LogParse, ParseStatus } from 'src/entities/log-parse.entity';
+import { LogParse } from 'src/entities/log-parse.entity';
 import { Between, Repository } from 'typeorm';
 
 @Injectable()
@@ -10,18 +10,8 @@ export class ParseLogService {
     private readonly parseLogRepository: Repository<LogParse>,
   ) {}
 
-  async recordParseLog(
-    status: ParseStatus,
-    modifiedCount: number,
-    executionTime: number,
-    message?: string,
-  ) {
-    const log = this.parseLogRepository.create({
-      status,
-      modifiedCount,
-      executionTime,
-      message,
-    });
+  async recordParseLog(data: LogParse) {
+    const log = this.parseLogRepository.create(data);
     return await this.parseLogRepository.save(log);
   }
 
