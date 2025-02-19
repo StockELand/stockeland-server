@@ -7,6 +7,7 @@ import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 import { PredictionLogService } from 'src/log/prediction-log.service';
 import { PredictService } from './predict.service';
 import { StockPrice } from 'src/entities/stock-price.entity';
+import { Job } from 'bull';
 
 @Processor(QUEUE_NAMES.PREDICT_QUEUE)
 @Injectable()
@@ -19,7 +20,7 @@ export class PredictProcessor {
   ) {}
 
   @Process(JOB_NAMES.PREDICT_MODEL)
-  async handleLearning() {
+  async handleLearning(job: Job) {
     const startTime = Date.now(); // 시작 시간 기록
     let modifiedCount = 0; // 수정된 데이터 개수 초기화
 
@@ -42,7 +43,7 @@ export class PredictProcessor {
           }
         },
         onStderr: (err) => {
-          console.error(`Python Error: ${err.toString()}`);
+          console.error(`Python Error: ${err}`);
         },
       });
 
@@ -75,6 +76,8 @@ export class PredictProcessor {
         executionTime: 0,
         message: error.toString(),
       });
+
+      await job.moveToFailed({ message: error.toString() }, true);
     }
   }
 
