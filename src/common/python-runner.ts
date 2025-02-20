@@ -58,10 +58,19 @@ export class PythonRunner {
       });
 
       pythonProcess.stderr.on('data', (err) => {
-        stderrData += err.toString();
-        if (onStderr) onStderr(err.toString());
-        pythonProcess.kill('SIGTERM'); // 💥 프로세스 강제 종료
-        reject(new Error(`Python Error: ${stderrData}`));
+        const errorMessage = err.toString();
+        stderrData += errorMessage;
+        if (onStderr) onStderr(errorMessage);
+
+        // // 특정 경고 메시지를 무시하도록 처리
+        // if (errorMessage.includes('YFTzMissingError')) {
+        //   console.warn(`Warning: ${errorMessage}`);
+        //   return; // 프로세스를 종료하지 않고 반환
+        // }
+
+        // // 다른 오류에 대해서만 프로세스 종료 및 예외 발생
+        // pythonProcess.kill('SIGTERM');
+        // reject(new Error(`Python Error: ${stderrData}`));
       });
 
       pythonProcess.on('close', (code) => {
