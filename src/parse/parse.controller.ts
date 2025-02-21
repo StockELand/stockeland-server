@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ParseService } from './parse.service';
 import { ParseLogService } from 'src/log/parse-log.service';
 
@@ -42,6 +42,11 @@ export class ParseController {
     }
 
     return await this.parseService.getParsedDataByDate(date);
+  }
+
+  @Get('remove/:id')
+  async removeJob(@Param('id') jobId: string) {
+    return await this.parseService.removeJob(jobId);
   }
 
   @Post('')

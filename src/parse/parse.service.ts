@@ -51,4 +51,8 @@ export class ParseService {
       throw error;
     }
   }
+
+  async removeJob(jobId: string) {
+    await this.queueService.removeJob(QUEUE_NAMES.PARSE_QUEUE, jobId);
+  }
 }

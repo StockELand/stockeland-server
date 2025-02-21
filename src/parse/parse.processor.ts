@@ -7,6 +7,7 @@ import { EVENT_NAMES, JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 import { ParseLogService } from 'src/log/parse-log.service';
 import { ParseService } from './parse.service';
 import { StockPrice } from 'src/entities/stock-price.entity';
+import { Job } from 'bull';
 
 @Processor(QUEUE_NAMES.PARSE_QUEUE)
 @Injectable()
@@ -19,7 +20,7 @@ export class ParseProcessor {
   ) {}
 
   @Process(JOB_NAMES.PARSE_STOCK)
-  async handleParsing() {
+  async handleParsing(job: Job) {
     const startTime = Date.now(); // 시작 시간 기록
     let modifiedCount = 0; // 수정된 데이터 개수 초기화
 
@@ -42,7 +43,7 @@ export class ParseProcessor {
           }
         },
         onStderr: (err) => {
-          console.error(`Python Error: ${err.toString()}`);
+          console.error(`Python Error: ${err}`);
         },
       });
 
@@ -59,7 +60,7 @@ export class ParseProcessor {
       });
 
       const executionTime = (Date.now() - startTime) / 1000;
-      // 성공 로그 저장
+      // ✅ 성공 로그 저장
       await this.parseLogService.recordParseLog({
         status: 'success',
         modifiedCount,
@@ -68,6 +69,7 @@ export class ParseProcessor {
         ...dates,
       });
     } catch (error) {
+      // 🔥 Python 프로세스 강제 종료 후 에러 발생 시 로그 저장
       this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
         progress: 100,
         state: 'Failed',
@@ -78,6 +80,7 @@ export class ParseProcessor {
         executionTime: 0,
         message: error.toString(),
       });
+      await job.moveToFailed({ message: error.toString() }, true);
     }
   }
 

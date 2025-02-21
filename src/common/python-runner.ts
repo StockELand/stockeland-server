@@ -28,6 +28,8 @@ export class PythonRunner {
         env: { ...process.env },
       });
 
+      let stderrData = '';
+
       if (stdInData) {
         const jsonString = JSON.stringify(stdInData);
         const bufferSize = 64 * 1024;
@@ -55,13 +57,30 @@ export class PythonRunner {
         }
       });
 
-      pythonProcess.stderr.on('data', onStderr);
+      pythonProcess.stderr.on('data', (err) => {
+        const errorMessage = err.toString();
+        stderrData += errorMessage;
+        if (onStderr) onStderr(errorMessage);
+
+        // // 특정 경고 메시지를 무시하도록 처리
+        // if (errorMessage.includes('YFTzMissingError')) {
+        //   console.warn(`Warning: ${errorMessage}`);
+        //   return; // 프로세스를 종료하지 않고 반환
+        // }
+
+        // // 다른 오류에 대해서만 프로세스 종료 및 예외 발생
+        // pythonProcess.kill('SIGTERM');
+        // reject(new Error(`Python Error: ${stderrData}`));
+      });
 
       pythonProcess.on('close', (code) => {
         if (code === 0) {
           resolve(finalData);
         } else {
-          reject(new Error(`Python process exited with code ${code}`));
+          const error = new Error(
+            `Python process exited with code ${code}\nError: ${stderrData}`,
+          );
+          reject(error);
         }
       });
     });
