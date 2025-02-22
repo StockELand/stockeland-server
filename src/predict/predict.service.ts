@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 import { QueueService } from 'src/common/queue.service';
+import { StartPredictingDto } from 'src/dto/start-predicting.dto';
 import { StockPrediction } from 'src/entities/stock-prediction.entity';
 import { StockService } from 'src/stock/stock.service';
 import { Repository } from 'typeorm';
@@ -14,10 +15,11 @@ export class PredictService {
     private readonly stockRepository: StockService,
   ) {}
 
-  async startPredicting(): Promise<void> {
+  async startPredicting(startPredictingDto: StartPredictingDto): Promise<void> {
     await this.queueService.addJob(
       QUEUE_NAMES.PREDICT_QUEUE,
       JOB_NAMES.PREDICT_MODEL,
+      startPredictingDto,
     );
   }
 
@@ -28,11 +30,15 @@ export class PredictService {
     if (predictions.length === 0) return 0;
 
     try {
-      const today = new Date(
-        date ? date : await this.stockRepository.getTradingDate(),
+      const specificDate = new Date(
+        date
+          ? await this.stockRepository.getTradingDate(1, date)
+          : await this.stockRepository.getTradingDate(),
       )
         .toISOString()
         .split('T')[0];
+
+      console.log(specificDate);
 
       const result = await this.predictionRepository
         .createQueryBuilder()
@@ -41,7 +47,7 @@ export class PredictService {
         .values(
           predictions.map((prediction) => ({
             ...prediction,
-            predictedAt: today,
+            predictedAt: specificDate,
           })),
         )
         .orUpdate(['change_percent'], ['symbol', 'predicted_at'], {
