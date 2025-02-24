@@ -38,8 +38,6 @@ export class PredictService {
         .toISOString()
         .split('T')[0];
 
-      console.log(specificDate);
-
       const result = await this.predictionRepository
         .createQueryBuilder()
         .insert()

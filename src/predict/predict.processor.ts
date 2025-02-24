@@ -31,7 +31,6 @@ export class PredictProcessor {
 
     try {
       const last100StockData = await this.stockService.getLast100Close(date);
-      console.log(last100StockData[last100StockData.length - 1]);
 
       const finalData = await PythonRunner.run('src/predict/predict.py', {
         stdInData: last100StockData,

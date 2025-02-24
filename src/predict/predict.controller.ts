@@ -47,7 +47,7 @@ export class PredictController {
 
   @Post('')
   async startPredicting(@Body() startPredictingDto: StartPredictingDto) {
-    startPredictingDto = { date: '2025-02-18' };
+    console.log(startPredictingDto);
     await this.predictService.startPredicting(startPredictingDto);
     return { message: 'Stock predict started' };
   }
