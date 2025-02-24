@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { PredictService } from './predict.service';
 import { PredictionLogService } from 'src/log/prediction-log.service';
+import { StartPredictingDto } from 'src/dto/start-predicting.dto';
 
 @Controller('predict')
 export class PredictController {
@@ -45,8 +46,9 @@ export class PredictController {
   }
 
   @Post('')
-  async startParsing() {
-    await this.predictService.startPredicting();
-    return { message: 'Stock parsing started' };
+  async startPredicting(@Body() startPredictingDto: StartPredictingDto) {
+    console.log(startPredictingDto);
+    await this.predictService.startPredicting(startPredictingDto);
+    return { message: 'Stock predict started' };
   }
 }

@@ -23,15 +23,19 @@ export class StockService {
     return symbols;
   }
 
-  async getLast100Close(): Promise<StockPrice[]> {
-    const today = new Date();
-    const hundredDaysAgo = new Date();
-    hundredDaysAgo.setDate(today.getDate() - 100);
+  async getLast100Close(date?: string): Promise<StockPrice[]> {
+    // 기준 날짜를 하루 전으로 설정
+    const baseDate = date ? new Date(date) : new Date();
+    baseDate.setDate(baseDate.getDate() - 1); // 당일 제외, 하루 전으로 조정
+
+    const hundredDaysAgo = new Date(baseDate);
+    hundredDaysAgo.setDate(baseDate.getDate() - 100);
+
     return this.stockRepository
       .createQueryBuilder('stock')
       .where('stock.date BETWEEN :start AND :end', {
         start: hundredDaysAgo.toISOString().split('T')[0], // YYYY-MM-DD 형식
-        end: today.toISOString().split('T')[0],
+        end: baseDate.toISOString().split('T')[0],
       })
       .orderBy('stock.date', 'ASC') // 날짜 오름차순 정렬
       .getMany();

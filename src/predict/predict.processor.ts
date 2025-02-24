@@ -22,15 +22,15 @@ export class PredictProcessor {
   @Process(JOB_NAMES.PREDICT_MODEL)
   async handleLearning(job: Job) {
     const startTime = Date.now(); // 시작 시간 기록
+    const date = job.data.date;
     let modifiedCount = 0; // 수정된 데이터 개수 초기화
-
     this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
       progress: 0,
       state: 'Ready',
     });
 
     try {
-      const last100StockData = await this.stockService.getLast100Close();
+      const last100StockData = await this.stockService.getLast100Close(date);
 
       const finalData = await PythonRunner.run('src/predict/predict.py', {
         stdInData: last100StockData,
@@ -48,7 +48,10 @@ export class PredictProcessor {
       });
 
       const dates = this.extractParsingDates(last100StockData);
-      modifiedCount = await this.predictService.savePredictions(finalData);
+      modifiedCount = await this.predictService.savePredictions(
+        finalData,
+        date,
+      );
 
       this.eventService.emit(EVENT_NAMES.PROGRESS_PREDICT, {
         progress: 100,
