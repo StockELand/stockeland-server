@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 import { QueueService } from 'src/common/queue.service';
-import { StartPredictingDto } from 'src/dto/start-predicting.dto';
+import { StartPredictDto } from 'src/dto/start-predict.dto';
 import { StockPrediction } from 'src/entities/stock-prediction.entity';
 import { StockService } from 'src/stock/stock.service';
 import { Repository } from 'typeorm';
@@ -15,7 +15,7 @@ export class PredictService {
     private readonly stockRepository: StockService,
   ) {}
 
-  async startPredicting(startPredictingDto: StartPredictingDto): Promise<void> {
+  async startPredicting(startPredictingDto: StartPredictDto): Promise<void> {
     await this.queueService.addJob(
       QUEUE_NAMES.PREDICT_QUEUE,
       JOB_NAMES.PREDICT_MODEL,

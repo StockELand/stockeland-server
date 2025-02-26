@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ParseService } from './parse.service';
 import { ParseLogService } from 'src/log/parse-log.service';
+import { StartParseDto } from 'src/dto/start-parse.dto';
 
 @Controller('parse')
 export class ParseController {
@@ -50,8 +51,8 @@ export class ParseController {
   }
 
   @Post('')
-  async startParsing() {
-    await this.parseService.startParsing();
+  async startParsing(@Body() startParseDto: StartParseDto) {
+    await this.parseService.startParsing(startParseDto);
     return { message: 'Stock parsing started' };
   }
 }
