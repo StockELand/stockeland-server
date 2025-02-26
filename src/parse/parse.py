@@ -4,12 +4,23 @@ import pandas as pd
 import sys
 from datetime import datetime, timedelta
 
-symbols = json.loads(sys.argv[1])
+
+def parse_date(date_str, default):
+    try:
+        return datetime.strptime(date_str, '%Y-%m-%d')
+    except (ValueError, TypeError):
+        return default
 
 
-def fetch_stock_data(symbols):
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=10)
+def fetch_stock_data(symbols, start_date=None, end_date=None):
+
+    if start_date and end_date:
+        end_date = parse_date(end_date, datetime.now()) + timedelta(days=1)
+        start_date = parse_date(start_date, datetime.now())
+    else:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=10)
+
     data = yf.download(
         symbols,
         start=start_date.strftime('%Y-%m-%d'),
@@ -59,4 +70,7 @@ def fetch_stock_data(symbols):
 
 
 if __name__ == '__main__':
-    fetch_stock_data(symbols)
+    symbols = json.loads(sys.argv[1])
+    start_date = sys.argv[2] if len(sys.argv) > 2 else None
+    end_date = sys.argv[3] if len(sys.argv) > 3 else None
+    fetch_stock_data(symbols, start_date, end_date)

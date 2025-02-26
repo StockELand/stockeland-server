@@ -8,6 +8,7 @@ import { ParseLogService } from 'src/log/parse-log.service';
 import { ParseService } from './parse.service';
 import { StockPrice } from 'src/entities/stock-price.entity';
 import { Job } from 'bull';
+import { StartParseDto } from 'src/dto/start-parse.dto';
 
 @Processor(QUEUE_NAMES.PARSE_QUEUE)
 @Injectable()
@@ -22,6 +23,7 @@ export class ParseProcessor {
   @Process(JOB_NAMES.PARSE_STOCK)
   async handleParsing(job: Job) {
     const startTime = Date.now(); // 시작 시간 기록
+    const rangeDate = job.data as StartParseDto;
     let modifiedCount = 0; // 수정된 데이터 개수 초기화
 
     this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {
@@ -33,7 +35,11 @@ export class ParseProcessor {
 
     try {
       const finalData = await PythonRunner.run('src/parse/parse.py', {
-        args: [JSON.stringify(symbols)],
+        args: [
+          JSON.stringify(symbols),
+          rangeDate.startDate ?? '',
+          rangeDate.endDate ?? '',
+        ],
         onStdout: (out) => {
           if (out.progress) {
             this.eventService.emit(EVENT_NAMES.PROGRESS_PARSE, {

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JOB_NAMES, QUEUE_NAMES } from 'src/common/constants';
 import { QueueService } from 'src/common/queue.service';
+import { StartParseDto } from 'src/dto/start-parse.dto';
 import { StockPrice } from 'src/entities/stock-price.entity';
 import { Repository } from 'typeorm';
 
@@ -13,10 +14,11 @@ export class ParseService {
     private stockPriceRepository: Repository<StockPrice>,
   ) {}
 
-  async startParsing(): Promise<void> {
+  async startParsing(startParseDto: StartParseDto): Promise<void> {
     await this.queueService.addJob(
       QUEUE_NAMES.PARSE_QUEUE,
       JOB_NAMES.PARSE_STOCK,
+      startParseDto,
     );
   }
 
