@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 export class StockService {
   constructor(
     @InjectRepository(StockPrice)
-    private stockRepository: Repository<StockPrice>,
+    private stockPriceRepository: Repository<StockPrice>,
     @InjectRepository(StockInfo)
     private stockInfoRepository: Repository<StockInfo>,
     @InjectRepository(StockPrediction)
@@ -31,7 +31,7 @@ export class StockService {
     const hundredDaysAgo = new Date(baseDate);
     hundredDaysAgo.setDate(baseDate.getDate() - 100);
 
-    return this.stockRepository
+    return this.stockPriceRepository
       .createQueryBuilder('stock')
       .where('stock.date BETWEEN :start AND :end', {
         start: hundredDaysAgo.toISOString().split('T')[0], // YYYY-MM-DD 형식
@@ -42,7 +42,7 @@ export class StockService {
   }
 
   async getTradingDate(daysAgo?: number, dateStr?: string): Promise<string> {
-    let query = this.stockRepository
+    let query = this.stockPriceRepository
       .createQueryBuilder('sp')
       .select('date')
       .distinct(true)
@@ -118,7 +118,7 @@ export class StockService {
 
   async getLatestAndPreviousStockData() {
     // 최신 거래일을 찾는 서브쿼리
-    const latestTradeSubQuery = this.stockRepository
+    const latestTradeSubQuery = this.stockPriceRepository
       .createQueryBuilder('s1')
       .select('s1.symbol', 'symbol')
       .addSelect('MAX(s1.date)', 'latest_date')
@@ -134,7 +134,7 @@ export class StockService {
   `;
 
     // 최종 데이터 조회
-    const query = this.stockRepository
+    const query = this.stockPriceRepository
       .createQueryBuilder('s1')
       .innerJoin('s1.stockInfo', 'si')
       .select([
@@ -170,5 +170,37 @@ export class StockService {
       );
 
     return query.getRawMany();
+  }
+
+  async getStockClose(symbol: string, range: '1w' | '1m' | '3m' | '6m' | '1y') {
+    const today = new Date();
+    const dateFrom = new Date();
+
+    // 기간별 날짜 계산
+    switch (range) {
+      case '1w': // 1주 전
+        dateFrom.setDate(today.getDate() - 7);
+        break;
+      case '1m': // 1달 전
+        dateFrom.setMonth(today.getMonth() - 1);
+        break;
+      case '3m': // 3달 전
+        dateFrom.setMonth(today.getMonth() - 3);
+        break;
+      case '6m': // 6달 전
+        dateFrom.setMonth(today.getMonth() - 6);
+        break;
+      case '1y': // 1년 전 (기본값)
+      default:
+        dateFrom.setFullYear(today.getFullYear() - 1);
+        break;
+    }
+
+    return this.stockPriceRepository
+      .createQueryBuilder('stock')
+      .where('stock.symbol = :symbol', { symbol })
+      .andWhere('stock.date >= :dateFrom', { dateFrom }) // 선택한 기간에 맞는 데이터 필터링
+      .orderBy('stock.date', 'DESC') // 최신 데이터부터 정렬
+      .getMany();
   }
 }
